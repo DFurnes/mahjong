@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react'
-import { HAND_SIZE, type Wind, explainHand } from './domain'
+import { HAND_SIZE, type ScoringOptions, explainHand } from './domain'
 import { Hand } from './components/Hand'
 import { HandSummary } from './components/HandSummary'
-import { SeatWindPicker } from './components/SeatWindPicker'
 import { Table } from './components/Table'
 import { Tray } from './components/Tray'
+import { WindPicker } from './components/WindPicker'
 import { useMahjongTable } from './state/useMahjongTable'
 import './App.css'
 
 export default function App() {
   const table = useMahjongTable()
   const [collapsed, setCollapsed] = useState(false)
-  const [seatWind, setSeatWind] = useState<Wind | null>(null)
+  const [options, setOptions] = useState<ScoringOptions>({})
 
   const { concealed, melds, bonus } = table.hand
   const explanation = useMemo(() => explainHand(table.hand), [table.hand])
@@ -26,7 +26,20 @@ export default function App() {
       </header>
 
       <main className="app__board">
-        <SeatWindPicker seatWind={seatWind} onChange={setSeatWind} />
+        <WindPicker
+          label="Your seat"
+          ariaLabel="Your seat wind"
+          wind={options.seatWind ?? null}
+          onChange={(seatWind) => setOptions((prev) => ({ ...prev, seatWind: seatWind ?? undefined }))}
+        />
+        <WindPicker
+          label="Round"
+          ariaLabel="The round's prevailing wind"
+          wind={options.roundWind ?? null}
+          onChange={(roundWind) =>
+            setOptions((prev) => ({ ...prev, roundWind: roundWind ?? undefined }))
+          }
+        />
         <Table
           remaining={table.remaining}
           onSelect={table.selectTile}
@@ -63,7 +76,7 @@ export default function App() {
           />
           <HandSummary
             hand={table.hand}
-            seatWind={seatWind}
+            options={options}
             remainingFor={table.remainingFor}
             onDeclare={table.declareMeld}
             onWinChange={table.setWin}

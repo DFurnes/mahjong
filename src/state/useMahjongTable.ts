@@ -13,6 +13,7 @@ import {
   type Tile,
   type TileCounts,
   type TileId,
+  type WinCircumstance,
   type WinSource,
   ALL_TILES,
   EMPTY_HAND,
@@ -40,7 +41,7 @@ export type TableAction =
   | { type: 'declare'; meld: Set3 }
   | { type: 'undeclare'; index: number }
   | { type: 'kong'; index: number }
-  | { type: 'win'; source: WinSource | null }
+  | { type: 'win'; source: WinSource | null; circumstances?: readonly WinCircumstance[] }
   | { type: 'clear' }
 
 export const initialTableState: TableState = EMPTY_HAND
@@ -139,7 +140,11 @@ export function tableReducer(state: TableState, action: TableAction): TableState
     }
 
     case 'win':
-      return { ...state, win: action.source ?? undefined }
+      return {
+        ...state,
+        win: action.source ?? undefined,
+        circumstances: action.source ? action.circumstances : undefined,
+      }
 
     case 'clear':
       return initialTableState
@@ -170,7 +175,7 @@ export interface MahjongTable {
   undeclareMeld: (index: number) => void
   /** Promote an already-declared pung to a kong by drawing its fourth copy off the table. */
   promoteKong: (index: number) => void
-  setWin: (source: WinSource | null) => void
+  setWin: (source: WinSource | null, circumstances?: readonly WinCircumstance[]) => void
   clear: () => void
   remainingFor: (tile: Tile) => number
 }
@@ -189,7 +194,7 @@ export function useMahjongTable(initial: TableState = initialTableState): Mahjon
     declareMeld: (meld) => dispatch({ type: 'declare', meld }),
     undeclareMeld: (index) => dispatch({ type: 'undeclare', index }),
     promoteKong: (index) => dispatch({ type: 'kong', index }),
-    setWin: (source) => dispatch({ type: 'win', source }),
+    setWin: (source, circumstances) => dispatch({ type: 'win', source, circumstances }),
     clear: () => dispatch({ type: 'clear' }),
     remainingFor: (tile) => remaining[tileId(tile) as TileId] ?? 0,
   }

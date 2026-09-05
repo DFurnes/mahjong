@@ -4,9 +4,10 @@ import {
   type HandScore,
   type Meld,
   type PartialSet,
+  type ScoringOptions,
   type Set3,
   type StandardTile,
-  type Wind,
+  type WinCircumstance,
   type WinSource,
   HAND_SIZE,
   LIMIT_FAAN,
@@ -26,13 +27,13 @@ import './HandSummary.css'
 
 export interface HandSummaryProps {
   hand: Hand
-  /** The player's own seat, if chosen. Unlocks the seat-wind faan. */
-  seatWind: Wind | null
+  /** The seat and round winds, if chosen. Unlocks the wind-pung and flower faan. */
+  options: ScoringOptions
   /** Copies of a tile still free on the table — gates the Kong action below. */
   remainingFor: (tile: StandardTile) => number
   /** Promotes a set the reading found to a meld on the table. */
   onDeclare: (meld: Set3) => void
-  onWinChange: (source: WinSource | null) => void
+  onWinChange: (source: WinSource | null, circumstances: readonly WinCircumstance[]) => void
   onClear: () => void
 }
 
@@ -180,7 +181,7 @@ function ScorePanel({ score }: { score: HandScore }) {
  */
 export function HandSummary({
   hand,
-  seatWind,
+  options,
   remainingFor,
   onDeclare,
   onWinChange,
@@ -188,14 +189,14 @@ export function HandSummary({
 }: HandSummaryProps) {
   const explanation = useMemo(() => explainHand(hand), [hand])
   const isFull = explanation.handSize === HAND_SIZE
-  // A score is a snapshot of a particular hand and a seat wind, so it is kept
-  // with the inputs it was taken from and ignored once either moves on.
+  // A score is a snapshot of a particular hand and a set of scoring options, so
+  // it is kept with the inputs it was taken from and ignored once either moves on.
   const [scored, setScored] = useState<{
     hand: Hand
-    seatWind: Wind | null
+    options: ScoringOptions
     score: HandScore
   } | null>(null)
-  const score = scored?.hand === hand && scored.seatWind === seatWind ? scored.score : null
+  const score = scored?.hand === hand && scored.options === options ? scored.score : null
 
   const handleExpose = (meld: Set3) => onDeclare({ ...meld, exposed: true })
   // A pung in the reading with a copy still free on the table can go straight
@@ -218,16 +219,25 @@ export function HandSummary({
       <GroupList groups={explanation.partials} partial />
       <FloaterList tiles={explanation.floaters} />
 
-      {seatWind && <p className="summary__seat-note">Scoring as {windName(seatWind)} seat.</p>}
+      {(options.seatWind || options.roundWind) && (
+        <p className="summary__seat-note">
+          Scoring as {options.seatWind ? `${windName(options.seatWind)} seat` : 'no seat chosen'}
+          {options.roundWind ? `, ${windName(options.roundWind)} round` : ''}.
+        </p>
+      )}
 
-      <WinPicker win={hand.win ?? null} onChange={onWinChange} />
+      <WinPicker
+        win={hand.win ?? null}
+        circumstances={hand.circumstances ?? []}
+        onChange={onWinChange}
+      />
 
       <div className="summary__actions">
         <button
           type="button"
           className="summary__button"
           disabled={!isFull}
-          onClick={() => setScored({ hand, seatWind, score: scoreHand(hand, seatWind ?? undefined) })}
+          onClick={() => setScored({ hand, options, score: scoreHand(hand, options) })}
         >
           Score hand
         </button>

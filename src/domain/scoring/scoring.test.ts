@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { concealedHand, type Hand } from '../hand'
 import { kong, pung } from '../melds'
 import { hand } from '../testHands'
-import { bonus, type Wind, wind } from '../tiles'
-import { LIMIT_FAAN, scoreHand } from './index'
+import { bonus, dragon, suited, wind } from '../tiles'
+import { LIMIT_FAAN, type ScoringOptions, scoreHand } from './index'
 
-const idsOf = (notation: string, seatWind?: Wind) =>
-  scoreHand(concealedHand(hand(notation)), seatWind).patterns.map((p) => p.id)
-const faanOf = (notation: string, seatWind?: Wind) =>
-  scoreHand(concealedHand(hand(notation)), seatWind).faan
+const idsOf = (notation: string, options?: ScoringOptions) =>
+  scoreHand(concealedHand(hand(notation)), options).patterns.map((p) => p.id)
+const faanOf = (notation: string, options?: ScoringOptions) =>
+  scoreHand(concealedHand(hand(notation)), options).faan
 
 describe('hands that cannot be scored', () => {
   it('rejects a hand that is not fourteen tiles', () => {
@@ -95,21 +95,112 @@ describe('faan patterns', () => {
   })
 
   it('scores a seat wind pung when it matches the chosen seat', () => {
-    expect(idsOf('we we we b123 b456 c789 dr dr', 'east')).toContain('seat-wind')
-    expect(faanOf('we we we b123 b456 c789 dr dr', 'east')).toBe(1)
+    expect(idsOf('we we we b123 b456 c789 dr dr', { seatWind: 'east' })).toContain('seat-wind')
+    expect(faanOf('we we we b123 b456 c789 dr dr', { seatWind: 'east' })).toBe(1)
   })
 
   it('does not score a wind pung against a seat it does not match', () => {
-    expect(idsOf('we we we b123 b456 c789 dr dr', 'south')).not.toContain('seat-wind')
+    expect(idsOf('we we we b123 b456 c789 dr dr', { seatWind: 'south' })).not.toContain(
+      'seat-wind',
+    )
     expect(idsOf('we we we b123 b456 c789 dr dr')).not.toContain('seat-wind')
   })
 
   it('stacks the seat wind faan with other patterns, up to the limit', () => {
     // Half flush (bamboo plus honours) plus a matching seat wind pung: 3 + 1.
-    const ids = idsOf('we we we dr dr dr b789 b456 b11', 'east')
+    const ids = idsOf('we we we dr dr dr b789 b456 b11', { seatWind: 'east' })
     expect(ids).toContain('half-flush')
     expect(ids).toContain('seat-wind')
-    expect(faanOf('we we we dr dr dr b789 b456 b11', 'east')).toBe(4)
+    expect(faanOf('we we we dr dr dr b789 b456 b11', { seatWind: 'east' })).toBe(4)
+  })
+
+  it('scores the round wind pung when it matches the chosen round', () => {
+    expect(idsOf('we we we b123 b456 c789 dr dr', { roundWind: 'east' })).toContain('round-wind')
+    expect(faanOf('we we we b123 b456 c789 dr dr', { roundWind: 'east' })).toBe(1)
+  })
+
+  it('stacks seat and round wind into a double wind when both match', () => {
+    const ids = idsOf('we we we b123 b456 c789 dr dr', { seatWind: 'east', roundWind: 'east' })
+    expect(ids).toContain('seat-wind')
+    expect(ids).toContain('round-wind')
+    expect(faanOf('we we we b123 b456 c789 dr dr', { seatWind: 'east', roundWind: 'east' })).toBe(
+      2,
+    )
+  })
+
+  it('scores mixed terminals and drops all triplets, but not against all-honours or all-terminals', () => {
+    const ids = idsOf('b111 b999 we we we dg dg dg c11')
+    expect(ids).toContain('mixed-terminals')
+    expect(ids).not.toContain('all-pungs')
+    expect(faanOf('b111 b999 we we we dg dg dg c11')).toBe(10)
+
+    const allHonours = idsOf('we we we ws ws ws dr dr dr dg dg dg dw dw')
+    expect(allHonours).not.toContain('mixed-terminals')
+    const allTerminals = idsOf('b111 b999 c111 c999 d11')
+    expect(allTerminals).not.toContain('mixed-terminals')
+  })
+
+  it('scores nine gates and drops full flush and all sequences', () => {
+    // 1-1-1-2-3-4-5-5-6-7-8-9-9-9: nine gates' base shape plus one extra 5.
+    const ids = idsOf('b11123455678999')
+    expect(ids).toContain('nine-gates')
+    expect(ids).not.toContain('full-flush')
+    expect(ids).not.toContain('all-chows')
+    expect(faanOf('b11123455678999')).toBe(LIMIT_FAAN)
+  })
+
+  it('does not score nine gates once a set is declared', () => {
+    const declared: Hand = {
+      concealed: hand('b11123455678'),
+      melds: [pung(suited('bamboo', 9), true)],
+      bonus: [],
+    }
+    expect(scoreHand(declared).patterns.map((p) => p.id)).not.toContain('nine-gates')
+  })
+
+  it('scores four kongs and drops all triplets', () => {
+    const withKongs: Hand = {
+      concealed: [],
+      melds: [
+        kong(wind('east')),
+        kong(wind('south')),
+        kong(dragon('red')),
+        kong(dragon('green')),
+      ],
+      bonus: [],
+    }
+    // Four kong slots plus a concealed pair fills the fourteen.
+    const full: Hand = { ...withKongs, concealed: hand('b11') }
+    const ids = scoreHand(full).patterns.map((p) => p.id)
+    expect(ids).toContain('four-kongs')
+    expect(ids).not.toContain('all-pungs')
+    expect(scoreHand(full).faan).toBe(LIMIT_FAAN)
+  })
+
+  it('scores four concealed pungs and drops all triplets and fully concealed', () => {
+    const won: Hand = { ...concealedHand(hand('b111 c222 d333 we we we dg dg')), win: 'draw' }
+    const ids = scoreHand(won).patterns.map((p) => p.id)
+    expect(ids).toContain('four-concealed-pungs')
+    expect(ids).not.toContain('all-pungs')
+    expect(ids).not.toContain('fully-concealed')
+    expect(scoreHand(won).faan).toBe(LIMIT_FAAN)
+  })
+
+  it('does not score four concealed pungs when one triplet was claimed', () => {
+    const exposed: Hand = {
+      concealed: hand('c222 d333 we we we dg dg'),
+      melds: [pung(suited('bamboo', 1), true)],
+      bonus: [],
+    }
+    expect(scoreHand(exposed).patterns.map((p) => p.id)).not.toContain('four-concealed-pungs')
+  })
+
+  it('scores all green and drops half and full flush', () => {
+    const ids = idsOf('b234 b234 b666 b88 dg dg dg')
+    expect(ids).toContain('all-green')
+    expect(ids).not.toContain('half-flush')
+    expect(ids).not.toContain('full-flush')
+    expect(faanOf('b234 b234 b666 b88 dg dg dg')).toBe(LIMIT_FAAN)
   })
 
   it('scores thirteen orphans', () => {
@@ -181,6 +272,127 @@ describe('how the hand was won', () => {
       win: 'discard',
     }
     expect(scoreHand(exposedNothing).patterns.map((p) => p.id)).toEqual(['chicken-hand'])
+  })
+})
+
+describe('the rest of situational faan', () => {
+  // No wind tiles at all, so seat/round wind never gets a chance to add faan
+  // of its own here — only the circumstance under test should move the score.
+  const BASE = 'b123 b456 c789 dr dr dr d11'
+
+  it('scores the last tile drawn, on top of self-draw and fully concealed', () => {
+    const won: Hand = { ...concealedHand(hand(BASE)), win: 'draw', circumstances: ['last-tile'] }
+    const score = scoreHand(won)
+    expect(score.patterns.map((p) => p.id)).toEqual([
+      'self-draw',
+      'fully-concealed',
+      'last-tile-draw',
+    ])
+    expect(score.faan).toBe(3)
+  })
+
+  it('scores the last discard claimed, distinct from a self-drawn last tile', () => {
+    const won: Hand = {
+      ...concealedHand(hand(BASE)),
+      win: 'discard',
+      circumstances: ['last-tile'],
+    }
+    const score = scoreHand(won)
+    expect(score.patterns.map((p) => p.id)).toEqual(['fully-concealed', 'last-tile-discard'])
+    expect(score.faan).toBe(2)
+  })
+
+  it('scores a kong replacement tile only on a self-draw', () => {
+    const won: Hand = { ...concealedHand(hand(BASE)), win: 'draw', circumstances: ['after-kong'] }
+    const score = scoreHand(won)
+    expect(score.patterns.map((p) => p.id)).toEqual(['self-draw', 'fully-concealed', 'after-kong'])
+    expect(score.faan).toBe(3)
+  })
+
+  it('scores robbing a kong only on a claimed discard', () => {
+    const won: Hand = {
+      ...concealedHand(hand(BASE)),
+      win: 'discard',
+      circumstances: ['robbing-kong'],
+    }
+    const score = scoreHand(won)
+    expect(score.patterns.map((p) => p.id)).toEqual(['fully-concealed', 'robbing-kong'])
+    expect(score.faan).toBe(2)
+  })
+
+  it('scores a heavenly hand for the dealer, and drops self-draw and fully-concealed', () => {
+    const won: Hand = {
+      ...concealedHand(hand(BASE)),
+      win: 'draw',
+      circumstances: ['first-turn'],
+    }
+    const score = scoreHand(won, { seatWind: 'east' })
+    expect(score.patterns.map((p) => p.id)).toEqual(['heavenly-hand'])
+    expect(score.faan).toBe(LIMIT_FAAN)
+  })
+
+  it('scores an earthly hand for a non-dealer, and drops fully-concealed', () => {
+    const won: Hand = {
+      ...concealedHand(hand(BASE)),
+      win: 'discard',
+      circumstances: ['first-turn'],
+    }
+    const score = scoreHand(won, { seatWind: 'south' })
+    expect(score.patterns.map((p) => p.id)).toEqual(['earthly-hand'])
+    expect(score.faan).toBe(LIMIT_FAAN)
+  })
+
+  it('does not score heavenly or earthly hand when the seat and source do not match', () => {
+    const won: Hand = {
+      ...concealedHand(hand(BASE)),
+      win: 'draw',
+      circumstances: ['first-turn'],
+    }
+    const ids = scoreHand(won, { seatWind: 'south' }).patterns.map((p) => p.id)
+    expect(ids).not.toContain('heavenly-hand')
+    expect(ids).not.toContain('earthly-hand')
+    expect(ids).toEqual(['self-draw', 'fully-concealed'])
+  })
+})
+
+describe('flowers and seasons', () => {
+  const BASE = 'b123 b456 c789 dr dr dr d11'
+
+  it('scores a flower matching the chosen seat', () => {
+    const won = concealedHand([...hand(BASE), bonus('flower', 1)])
+    const score = scoreHand(won, { seatWind: 'east' })
+    expect(score.patterns.map((p) => p.id)).toContain('seat-flower')
+    expect(score.faan).toBe(1)
+  })
+
+  it('does not score a flower against a seat it does not match', () => {
+    const won = concealedHand([...hand(BASE), bonus('flower', 1)])
+    const score = scoreHand(won, { seatWind: 'south' })
+    expect(score.patterns.map((p) => p.id)).not.toContain('seat-flower')
+    expect(score.faan).toBe(0)
+  })
+
+  it('scores a full set of flowers as two faan, not three', () => {
+    const won = concealedHand([
+      ...hand(BASE),
+      bonus('flower', 1),
+      bonus('flower', 2),
+      bonus('flower', 3),
+      bonus('flower', 4),
+    ])
+    const score = scoreHand(won, { seatWind: 'east' })
+    expect(score.patterns.map((p) => p.id)).toContain('all-flowers')
+    expect(score.patterns.map((p) => p.id)).not.toContain('seat-flower')
+    expect(score.faan).toBe(2)
+  })
+
+  it('stacks a matching flower and season into two faan', () => {
+    const won = concealedHand([...hand(BASE), bonus('flower', 1), bonus('season', 1)])
+    const score = scoreHand(won, { seatWind: 'east' })
+    const ids = score.patterns.map((p) => p.id)
+    expect(ids).toContain('seat-flower')
+    expect(ids).toContain('seat-season')
+    expect(score.faan).toBe(2)
   })
 })
 

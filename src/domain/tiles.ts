@@ -38,6 +38,9 @@ export const DRAGONS: readonly Dragon[] = ['red', 'green', 'white']
 export const RANKS: readonly Rank[] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 export const BONUS_INDICES: readonly BonusIndex[] = [1, 2, 3, 4]
 
+/** Seat numbering, which is what a flower or season has to match: East is 1. */
+export const SEAT_INDEX: Record<Wind, BonusIndex> = { east: 1, south: 2, west: 3, north: 4 }
+
 const SUIT_PREFIX: Record<Suit, string> = { bamboo: 'b', character: 'c', dot: 'd' }
 const WIND_SUFFIX: Record<Wind, string> = { east: 'e', south: 's', west: 'w', north: 'n' }
 const DRAGON_SUFFIX: Record<Dragon, string> = { red: 'r', green: 'g', white: 'w' }

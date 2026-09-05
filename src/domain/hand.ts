@@ -15,6 +15,18 @@ import { type Set3, meldTiles } from './melds'
 /** How the winning tile arrived. Undefined (on {@link Hand.win}) means the player hasn't said. */
 export type WinSource = 'draw' | 'discard'
 
+/**
+ * Extra circumstances of the win that carry faan of their own, on top of
+ * {@link WinSource}. Which named pattern a circumstance scores depends on the
+ * source it pairs with — `last-tile` is 海底撈月 on a draw and 河底撈魚 on a
+ * discard, and `first-turn` is 天和 for the East seat and 地和 for anyone else.
+ */
+export type WinCircumstance =
+  | 'last-tile'
+  | 'after-kong'
+  | 'robbing-kong'
+  | 'first-turn'
+
 export interface Hand {
   /** Tiles still hidden in front of the player. */
   concealed: StandardTile[]
@@ -24,6 +36,8 @@ export interface Hand {
   bonus: BonusTile[]
   /** How the hand was won, if the player has said. Undefined means no situational faan applies. */
   win?: WinSource
+  /** Extra circumstances of the win. Empty or absent means an ordinary win. */
+  circumstances?: readonly WinCircumstance[]
 }
 
 export const HAND_SIZE = 14

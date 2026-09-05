@@ -87,16 +87,21 @@ pattern in `domain/scoring/patterns.ts` is a self-contained predicate, so
 extending the rulebook means adding entries to that list. Patterns stack, capped
 at the 13-faan limit, except where one `supersedes` a weaker pattern it implies.
 
+The rulebook covers old-style Hong Kong scoring plus the popular limit hands
+(混么九, 九蓮寶燈, 十八羅漢, 坎坎和, 綠一色), the seat and round wind (so a
+matching wind pung correctly doubles), the rest of the situational faan (last
+tile, robbing a kong, the kong replacement tile, 天和/地和), and flowers and
+seasons scored against the seat. Each pattern carries a `variant` of `'core'`
+or `'house'`, an unused hook today — every pattern always applies — but meant
+for a future settings screen that lets a table turn the house-variant ones off.
+Wait-shape faan (邊張, 坎張, 單吊) stays out on purpose: it is a
+Japanese/Taiwanese idea Hong Kong rules don't score, and scoring it would need
+tracking which tile completed the hand, which nothing else here needs.
+
 ## Not modelled yet
 
-Which particular tile completed the hand, as opposed to how it arrived —
-Hong Kong scoring only cares about self-draw versus a claimed discard (both
-modelled, as `Hand['win']`), and the tile-level distinction only matters for
-wait-shape faan (邊張, 坎張, 單吊), which is a Japanese/Taiwanese idea Hong Kong
-rules don't score. Also missing: the rest of situational faan (last tile,
-robbing a kong, the replacement tile drawn after a kong); the round/prevailing
-wind (圈風) — only the seat wind (門風) is modelled so far, so a "double wind"
-pung only scores once; and faan for flowers and seasons, which needs bonus
-tiles threaded into `ScoringContext` (they are currently set aside entirely).
-The seams for all of these are already in the model — `ScoringContext` and the
-`WinningHand` union.
+Turning faan into money — the faan→points table, and who pays whom on a
+self-draw versus a discard. Dealer rotation and any other multi-player game
+state (this app scores one hand at a time, from one seat's point of view). The
+settings screen the `variant` tag on each faan pattern is waiting for, to let a
+table turn house rules on or off instead of always scoring them.

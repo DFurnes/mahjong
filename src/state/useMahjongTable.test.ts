@@ -213,6 +213,25 @@ describe('how the hand was won', () => {
     const cleared = tableReducer(won, { type: 'win', source: null })
     expect(cleared.win).toBeUndefined()
   })
+
+  it('sets circumstances alongside the win source', () => {
+    const won = tableReducer(initialTableState, {
+      type: 'win',
+      source: 'draw',
+      circumstances: ['last-tile'],
+    })
+    expect(won.circumstances).toEqual(['last-tile'])
+  })
+
+  it('clears circumstances along with the win source', () => {
+    const won = tableReducer(initialTableState, {
+      type: 'win',
+      source: 'draw',
+      circumstances: ['last-tile'],
+    })
+    const cleared = tableReducer(won, { type: 'win', source: null })
+    expect(cleared.circumstances).toBeUndefined()
+  })
 })
 
 describe('what is left on the table', () => {

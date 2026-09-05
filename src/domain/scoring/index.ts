@@ -69,14 +69,20 @@ function scoreWinningHand(context: ScoringContext): HandScore {
   }
 }
 
+export interface ScoringOptions {
+  /** The player's own seat wind, if chosen. Unlocks the seat-wind faan (and flowers matched to it). */
+  seatWind?: Wind
+  /** The prevailing wind of the round, if chosen. Unlocks the round-wind faan. */
+  roundWind?: Wind
+}
+
 /**
- * Score a hand. Bonus tiles are set aside — under full rules each is worth a
- * faan, but that needs bonus tiles threaded into {@link ScoringContext}, which
- * does not happen yet, so they score nothing here. `seatWind` enables the
- * seat-wind pattern; the round wind is not modeled yet. `hand.win` enables
- * self-draw and fully-concealed; leaving it unset scores neither.
+ * Score a hand. `seatWind` and `roundWind` enable the wind-pung and
+ * seat/season-matched flower patterns; `hand.win` enables self-draw and
+ * fully-concealed; `hand.circumstances` enables the rest of the situational
+ * faan. Leaving any of them unset simply scores nothing for it.
  */
-export function scoreHand(hand: Hand, seatWind?: Wind): HandScore {
+export function scoreHand(hand: Hand, options: ScoringOptions = {}): HandScore {
   if (handSize(hand) !== HAND_SIZE) return NO_SCORE
 
   const declared = hand.melds
@@ -92,10 +98,20 @@ export function scoreHand(hand: Hand, seatWind?: Wind): HandScore {
 
   const tiles = handTiles(hand)
   const concealed = isConcealedHand(hand)
+  const circumstances = hand.circumstances ?? []
 
   return candidates
     .map((winningHand) =>
-      scoreWinningHand({ tiles, hand: winningHand, seatWind, win: hand.win, concealed }),
+      scoreWinningHand({
+        tiles,
+        hand: winningHand,
+        bonus: hand.bonus,
+        seatWind: options.seatWind,
+        roundWind: options.roundWind,
+        win: hand.win,
+        circumstances,
+        concealed,
+      }),
     )
     .reduce((best, score) => (score.faan > best.faan ? score : best))
 }

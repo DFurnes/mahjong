@@ -231,6 +231,61 @@ describe('declaring melds', () => {
     // Full flush (7) + all sequences (1), plus self-drawn (1) and fully concealed (1).
     expect(screen.getByText('10 faan')).toBeInTheDocument()
   })
+
+  it('scores a round wind pung against the chosen round', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of ['East Wind', 'East Wind', 'East Wind']) await user.click(boardTile(name))
+    for (const name of ['1 of Bamboo', '2 of Bamboo', '3 of Bamboo']) {
+      await user.click(boardTile(name))
+    }
+    for (const name of ['4 of Bamboo', '5 of Bamboo', '6 of Bamboo']) {
+      await user.click(boardTile(name))
+    }
+    for (const name of ['7 of Characters', '8 of Characters', '9 of Characters']) {
+      await user.click(boardTile(name))
+    }
+    await user.click(boardTile('Red Dragon'))
+    await user.click(boardTile('Red Dragon'))
+
+    await user.click(
+      within(screen.getByRole('group', { name: "The round's prevailing wind" })).getByRole(
+        'button',
+        { name: /East/ },
+      ),
+    )
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+
+    expect(screen.getByText(/Round wind/)).toBeInTheDocument()
+    expect(screen.getByText('1 faan')).toBeInTheDocument()
+  })
+
+  it('disables a circumstance toggle that does not fit how the hand was won', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('button', { name: /kong's replacement/i })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'On a discard' }))
+    expect(screen.getByRole('button', { name: /kong's replacement/i })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Self-drawn' }))
+    expect(screen.getByRole('button', { name: /kong's replacement/i })).toBeEnabled()
+  })
+
+  it('scores the last-tile faan when that circumstance is toggled on', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of WINNING) await user.click(boardTile(name))
+    await user.click(screen.getByRole('button', { name: 'Self-drawn' }))
+    await user.click(screen.getByRole('button', { name: /The last tile/ }))
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+
+    // Full flush (7) + all sequences (1) + self-drawn (1) + fully concealed (1) + last tile (1).
+    expect(screen.getByText('11 faan')).toBeInTheDocument()
+  })
 })
 
 describe('collapsing the tray', () => {
