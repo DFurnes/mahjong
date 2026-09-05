@@ -52,6 +52,48 @@
   font-size: 0.7rem;
 }
 
+/*
+ * Wraps the scrolling strip so a panel-coloured fade can sit pinned at
+ * whichever edge still has tiles to scroll to — tiles are opaque, so the
+ * fade has to paint over them rather than live in the strip's own
+ * background. `Hand.tsx` tracks scroll position and toggles the two
+ * `--can-scroll-*` modifiers; each one just fades its pseudo-element in.
+ */
+.hand__scroll {
+  position: relative;
+  min-width: 0;
+}
+
+.hand__scroll::before,
+.hand__scroll::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.25rem;
+
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.hand__scroll::before {
+  left: 0;
+  /* rgb(11 47 27 / 0) is --panel at alpha 0, spelled out so the gradient
+     fades smoothly instead of drifting through transparent black. */
+  background: linear-gradient(to right, var(--panel), rgb(11 47 27 / 0));
+}
+
+.hand__scroll::after {
+  right: 0;
+  background: linear-gradient(to left, var(--panel), rgb(11 47 27 / 0));
+}
+
+.hand__scroll--can-scroll-left::before,
+.hand__scroll--can-scroll-right::after {
+  opacity: 1;
+}
+
 /* Collapsed tray: one line of small tiles, hand then bonus. Groups never wrap
    onto their own line — on a narrow phone a full hand scrolls horizontally
    within the strip instead of stacking into multiple rows. */

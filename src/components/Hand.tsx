@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   type BonusTile,
   type Set3,
@@ -82,35 +83,74 @@ function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare }: Omit<HandPr
   const concealedSlots = Math.max(0, HAND_SIZE - melds.length * 3)
   const emptySlots = Math.max(0, concealedSlots - tiles.length)
 
+  // Tracks whether the strip has more tiles past either edge, so those edges
+  // can fade in and out as it scrolls. Re-checks on scroll, on window resize,
+  // and whenever the tile counts below change — added or returned tiles
+  // change the strip's scroll width without the element itself resizing.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 0)
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [tiles.length, melds.length, bonus.length])
+
+  const scrollClass = [
+    'hand__scroll',
+    canScrollLeft && 'hand__scroll--can-scroll-left',
+    canScrollRight && 'hand__scroll--can-scroll-right',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className={`hand hand--compact${melds.length > 0 ? ' hand--has-melds' : ''}`}>
-      <div className="hand__tiles" data-testid="hand-tiles-compact">
-        {tiles.map((tile, index) => (
-          <Tile
-            key={tileKey(tile, index)}
-            tile={tile}
-            size="small"
-            onSelect={() => onReturn('concealed', index)}
-          />
-        ))}
-        {Array.from({ length: emptySlots }, (_, index) => (
-          <TileSlot key={`slot-${index}`} size="small" />
-        ))}
-      </div>
+    <div className={scrollClass}>
+      <div
+        ref={scrollRef}
+        className={`hand hand--compact${melds.length > 0 ? ' hand--has-melds' : ''}`}
+      >
+        <div className="hand__tiles" data-testid="hand-tiles-compact">
+          {tiles.map((tile, index) => (
+            <Tile
+              key={tileKey(tile, index)}
+              tile={tile}
+              size="small"
+              onSelect={() => onReturn('concealed', index)}
+            />
+          ))}
+          {Array.from({ length: emptySlots }, (_, index) => (
+            <TileSlot key={`slot-${index}`} size="small" />
+          ))}
+        </div>
 
-      <div className="hand__melds-compact" data-testid="meld-tiles-compact">
-        <MeldList melds={melds} onUndeclare={onUndeclare} size="small" />
-      </div>
+        <div className="hand__melds-compact" data-testid="meld-tiles-compact">
+          <MeldList melds={melds} onUndeclare={onUndeclare} size="small" />
+        </div>
 
-      <div className="hand__tiles" data-testid="bonus-tiles-compact">
-        {bonus.map((tile, index) => (
-          <Tile
-            key={tileKey(tile, index)}
-            tile={tile}
-            size="small"
-            onSelect={() => onReturn('bonus', index)}
-          />
-        ))}
+        <div className="hand__tiles" data-testid="bonus-tiles-compact">
+          {bonus.map((tile, index) => (
+            <Tile
+              key={tileKey(tile, index)}
+              tile={tile}
+              size="small"
+              onSelect={() => onReturn('bonus', index)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
