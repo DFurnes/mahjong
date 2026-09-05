@@ -16,6 +16,17 @@ npm run build      # typecheck + production build
 npm run lint
 ```
 
+## Continuous integration and deployment
+
+`.github/workflows/ci.yml` lints, tests and builds on every push and pull
+request. On `main` it then builds again and publishes to GitHub Pages.
+
+Assets are built with a relative base (`base: './'` in `vite.config.ts`), so the
+same build works from a project page at `/mahjong/` and from a domain root.
+
+The Pages deploy needs **Settings → Pages → Source** set to **GitHub Actions**
+once, on the repository.
+
 ## How it is put together
 
 ```
