@@ -4,9 +4,9 @@ A Hong Kong–style mahjong calculator at `/`, with shared rules settings and a
 pre-game setup screen at `/game`. Tap tiles to build a hand and the calculator
 tells you what it holds, how far it is from winning, and what it scores.
 
-The headless four-player match model is implemented; bots and the playable table
-are later phases. Rules and game transitions live in pure TypeScript layers that
-know nothing about React.
+The headless four-player match model and deterministic heuristic bots are
+implemented; the playable table is a later phase. Rules, controllers, bots, and
+game transitions live in pure TypeScript layers that know nothing about React.
 
 ## Running the game
 
@@ -17,6 +17,7 @@ pnpm serve         # http://localhost:3000
 
 ```
 pnpm test          # Vitest
+pnpm test:simulation # 100 seeded hands and 20 complete bot matches
 pnpm lint
 ```
 
@@ -30,7 +31,7 @@ src/
     scoring/       faan patterns, rules and the scorer that applies them
     testing/       test-only hand builders (not part of the public engine API)
     index.ts       convenience facade; each responsibility also has its own barrel
-  game/            deterministic wall, turns, claims, settlement and projections
+  game/            deterministic mechanics, projections, controllers and bots
   settings/        persisted rule preferences and React state
   pages/           route-level interfaces
   state/           calculator hand state
@@ -114,5 +115,6 @@ tracking which tile completed the hand, which nothing else here needs.
 
 ## Not modelled yet
 
-The `/game` route still exposes only setup because the playable table and bots
-belong to Phases 3–4. Game persistence and replay arrive in Phase 5.
+The `/game` route still exposes only setup because the playable table belongs to
+Phase 4. Phase 3 provides projection-safe async controllers, deterministic bots,
+and automated match simulations. Game persistence and replay arrive in Phase 5.

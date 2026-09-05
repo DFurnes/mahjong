@@ -62,7 +62,13 @@ function resolveClaims(state: GameState) {
   if (!phase.eligible.every((id) => phase.responses[id])) return
   const claims = Object.values(phase.responses).filter((response): response is ClaimCommand => response?.type !== 'pass')
   const wins = claims.filter((claim) => claim.type === 'win')
-  if (wins.length) { finishWin(state, orderClaims(wins, phase.discarder).map(({ player }) => player), phase.discarder); return }
+  if (wins.length) {
+    // A promoted tile is removed from its owner's hand while robbing claims are pending.
+    // Keep it in the public discard area once the hand ends, just like an ordinary winning discard.
+    if (phase.robbedKong) state.players[phase.discarder].discards.push(phase.discard)
+    finishWin(state, orderClaims(wins, phase.discarder).map(({ player }) => player), phase.discarder)
+    return
+  }
   if (phase.robbedKong) {
     const owner = state.players[phase.robbedKong.player]
     const old = owner.melds[phase.robbedKong.meldIndex]

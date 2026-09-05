@@ -48,7 +48,7 @@ export function GamePage({
           <div><dt>Limit</dt><dd>{setup.rules.limitFaan} faan</dd></div>
           <div><dt>House rules</dt><dd>{Object.values(setup.rules.houseRules).filter(Boolean).length} enabled</dd></div>
         </dl>
-        <p className="game-card__pending">Bots and the interactive table arrive in Phases 3 and 4.</p>
+        <p className="game-card__pending">Bots are ready; the interactive table arrives in Phase 4.</p>
         <button type="button" className="game-card__secondary" onClick={onEnd}>End setup</button>
       </section>
     </main>
