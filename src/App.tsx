@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { HAND_SIZE, type ScoringOptions, explainHand } from './domain'
+import { type ScoringOptions, explainHand } from './domain'
 import { Hand } from './components/Hand'
 import { HandSummary } from './components/HandSummary'
 import { Table } from './components/Table'
@@ -10,7 +10,7 @@ import './App.css'
 
 export default function App() {
   const table = useMahjongTable()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [options, setOptions] = useState<ScoringOptions>({})
 
   const { concealed, melds, bonus } = table.hand
@@ -26,31 +26,50 @@ export default function App() {
       </header>
 
       <main className="app__board">
-        <WindPicker
-          label="Your seat"
-          ariaLabel="Your seat wind"
-          wind={options.seatWind ?? null}
-          onChange={(seatWind) => setOptions((prev) => ({ ...prev, seatWind: seatWind ?? undefined }))}
-        />
-        <WindPicker
-          label="Round"
-          ariaLabel="The round's prevailing wind"
-          wind={options.roundWind ?? null}
-          onChange={(roundWind) =>
-            setOptions((prev) => ({ ...prev, roundWind: roundWind ?? undefined }))
-          }
-        />
-        <Table
-          remaining={table.remaining}
-          onSelect={table.selectTile}
-          handFull={table.isHandFull}
-        />
+        <div className="app__winds">
+          <WindPicker
+            label="Your seat"
+            ariaLabel="Your seat wind"
+            wind={options.seatWind ?? null}
+            onChange={(seatWind) =>
+              setOptions((prev) => ({ ...prev, seatWind: seatWind ?? undefined }))
+            }
+          />
+          <WindPicker
+            label="Round"
+            ariaLabel="The round's prevailing wind"
+            wind={options.roundWind ?? null}
+            onChange={(roundWind) =>
+              setOptions((prev) => ({ ...prev, roundWind: roundWind ?? undefined }))
+            }
+          />
+        </div>
+        <div className="app__content">
+          <section className="app__tiles" aria-labelledby="tiles-heading">
+            <h2 className="app__section-heading" id="tiles-heading">
+              Tiles
+            </h2>
+            <Table
+              remaining={table.remaining}
+              onSelect={table.selectTile}
+              handFull={table.isHandFull}
+            />
+          </section>
+          <section className="app__summary" aria-label="Hand sets and score">
+            <HandSummary
+              hand={table.hand}
+              options={options}
+              remainingFor={table.remainingFor}
+              onDeclare={table.declareMeld}
+              onWinChange={table.setWin}
+            />
+          </section>
+        </div>
       </main>
 
       <footer className="app__tray">
         <Tray
-          title="Your hand"
-          count={`${explanation.handSize} / ${HAND_SIZE}`}
+          title="Hand"
           status={explanation.brief}
           collapsed={collapsed}
           onToggle={() => setCollapsed((wasCollapsed) => !wasCollapsed)}
@@ -62,7 +81,6 @@ export default function App() {
               bonus={bonus}
               onReturn={table.returnTile}
               onUndeclare={table.undeclareMeld}
-              onKong={table.promoteKong}
             />
           }
         >
@@ -72,15 +90,6 @@ export default function App() {
             bonus={bonus}
             onReturn={table.returnTile}
             onUndeclare={table.undeclareMeld}
-            onKong={table.promoteKong}
-          />
-          <HandSummary
-            hand={table.hand}
-            options={options}
-            remainingFor={table.remainingFor}
-            onDeclare={table.declareMeld}
-            onWinChange={table.setWin}
-            onClear={table.clear}
           />
         </Tray>
       </footer>

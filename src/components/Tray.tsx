@@ -4,8 +4,6 @@ import './Tray.css'
 export interface TrayProps {
   /** Bar heading, e.g. "Your hand". */
   title: string
-  /** Sits beside the title, e.g. "5 / 14". */
-  count: string
   /** One-line status, e.g. "2 sets · 1 pair · 6 away". */
   status: string
   collapsed: boolean
@@ -23,7 +21,7 @@ const BODY_ID = 'tray-body'
  * collapsed down to its bar plus a glance at what's in hand — enough to keep
  * playing without losing the board underneath.
  */
-export function Tray({ title, count, status, collapsed, onToggle, peek, children }: TrayProps) {
+export function Tray({ title, status, collapsed, onToggle, peek, children }: TrayProps) {
   return (
     <div className={`tray${collapsed ? ' tray--collapsed' : ''}`}>
       <button
@@ -35,7 +33,6 @@ export function Tray({ title, count, status, collapsed, onToggle, peek, children
       >
         <span className="tray__heading">
           {title}
-          <span className="tray__count">{count}</span>
         </span>
         <span className="tray__status">{status}</span>
         <span className="tray__chevron" aria-hidden="true" />

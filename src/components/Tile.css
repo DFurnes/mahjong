@@ -53,14 +53,6 @@
   opacity: 1;
 }
 
-.tile--large {
-  --tile-width: calc(var(--tile-base) * 1.2);
-}
-
-.tile--small {
-  --tile-width: calc(var(--tile-base) * 0.78);
-}
-
 .tile__art {
   width: 72%;
   height: 72%;
@@ -95,4 +87,14 @@
   background: rgb(0 0 0 / 0.12);
   border: 1px dashed rgb(255 255 255 / 0.25);
   border-radius: 0.35rem;
+}
+
+/* Size modifiers follow both tile and slot defaults so either kind of element
+   honours the requested display size. */
+.tile--large {
+  --tile-width: calc(var(--tile-base) * 1.2);
+}
+
+.tile--small {
+  --tile-width: calc(var(--tile-base) * 0.78);
 }

@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import {
   type BonusTile,
   type Set3,
@@ -23,11 +22,9 @@ export interface HandProps {
   onReturn: (area: Area, index: number) => void
   /** Tapping a declared meld takes it apart and returns its tiles to hand. */
   onUndeclare: (index: number) => void
-  /** Promotes an exposed pung to a kong by drawing its fourth copy off the table. */
-  onKong: (index: number) => void
   /**
-   * Strip the hand down to a single row of small tiles — no empty slots and no
-   * headings — for the collapsed tray, where it has to fit on one line.
+   * Strip the hand down to small tiles and slots with no headings for the
+   * collapsed tray.
    */
   compact?: boolean
 }
@@ -50,17 +47,13 @@ function MeldTileArt({ tile, size }: { tile: TileModel; size: 'small' | 'medium'
   )
 }
 
-const MELD_TYPE_LABEL: Record<Set3['type'], string> = { pung: 'Pung', chow: 'Chow', kong: 'Kong' }
-
 function MeldList({
   melds,
   onUndeclare,
-  onKong,
   size,
 }: {
   melds: readonly Set3[]
   onUndeclare: (index: number) => void
-  onKong: (index: number) => void
   size: 'small' | 'medium'
 }) {
   if (melds.length === 0) return null
@@ -79,53 +72,35 @@ function MeldList({
               <MeldTileArt key={tileIndex} tile={tile} size={size} />
             ))}
           </button>
-          {/* The compact peek has no room for a label — it stays a single line of tiles. */}
-          {size === 'medium' && (
-            <span className="hand__meld-label" aria-hidden="true">
-              {MELD_TYPE_LABEL[meld.type]}
-            </span>
-          )}
-          {meld.type === 'pung' && meld.exposed && (
-            <button
-              type="button"
-              className="hand__meld-kong"
-              onClick={() => onKong(index)}
-              aria-label={`Promote ${meldName(meld)} to a kong`}
-            >
-              + Kong
-            </button>
-          )}
         </li>
       ))}
     </ul>
   )
 }
 
-function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare, onKong }: Omit<HandProps, 'compact'>) {
+function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare }: Omit<HandProps, 'compact'>) {
+  const concealedSlots = Math.max(0, HAND_SIZE - melds.length * 3)
+  const emptySlots = Math.max(0, concealedSlots - tiles.length)
+
   return (
-    <div className="hand hand--compact">
+    <div className={`hand hand--compact${melds.length > 0 ? ' hand--has-melds' : ''}`}>
       <div className="hand__tiles" data-testid="hand-tiles-compact">
-        {tiles.length === 0 ? (
-          <p className="hand__empty">No tiles yet</p>
-        ) : (
-          tiles.map((tile, index) => (
-            <Tile
-              key={tileKey(tile, index)}
-              tile={tile}
-              size="small"
-              onSelect={() => onReturn('concealed', index)}
-            />
-          ))
-        )}
+        {tiles.map((tile, index) => (
+          <Tile
+            key={tileKey(tile, index)}
+            tile={tile}
+            size="small"
+            onSelect={() => onReturn('concealed', index)}
+          />
+        ))}
+        {Array.from({ length: emptySlots }, (_, index) => (
+          <TileSlot key={`slot-${index}`} size="small" />
+        ))}
       </div>
 
-      {melds.length > 0 && <span className="hand__divider" aria-hidden="true" />}
-
-      <div data-testid="meld-tiles-compact">
-        <MeldList melds={melds} onUndeclare={onUndeclare} onKong={onKong} size="small" />
+      <div className="hand__melds-compact" data-testid="meld-tiles-compact">
+        <MeldList melds={melds} onUndeclare={onUndeclare} size="small" />
       </div>
-
-      {bonus.length > 0 && <span className="hand__divider" aria-hidden="true" />}
 
       <div className="hand__tiles" data-testid="bonus-tiles-compact">
         {bonus.map((tile, index) => (
@@ -147,7 +122,6 @@ export function Hand({
   bonus,
   onReturn,
   onUndeclare,
-  onKong,
   compact = false,
 }: HandProps) {
   if (compact) {
@@ -158,14 +132,12 @@ export function Hand({
         bonus={bonus}
         onReturn={onReturn}
         onUndeclare={onUndeclare}
-        onKong={onKong}
       />
     )
   }
 
   // Slots left for concealed tiles once declared melds have taken their three
-  // each — the grid should only ever reserve this many columns, or a declared
-  // meld leaves a stretch of dead grid track sitting before the divider.
+  // each, so the row only reserves space for tiles still held in hand.
   const concealedSlots = Math.max(0, HAND_SIZE - melds.length * 3)
   const emptySlots = Math.max(0, concealedSlots - tiles.length)
 
@@ -179,7 +151,6 @@ export function Hand({
             role="group"
             aria-label="Your hand"
             data-testid="hand-tiles"
-            style={{ '--concealed-slots': concealedSlots } as CSSProperties}
           >
             {tiles.map((tile, index) => (
               <Tile
@@ -192,12 +163,17 @@ export function Hand({
               <TileSlot key={`slot-${index}`} />
             ))}
           </div>
+        </div>
+      </section>
 
-          {melds.length > 0 && <span className="hand__divider" aria-hidden="true" />}
-
-          <div data-testid="meld-tiles">
-            <MeldList melds={melds} onUndeclare={onUndeclare} onKong={onKong} size="medium" />
-          </div>
+      <section className="hand__section">
+        <h2 className="hand__label">Exposed</h2>
+        <div data-testid="meld-tiles">
+          {melds.length === 0 ? (
+            <p className="hand__empty hand__empty--caption">None yet</p>
+          ) : (
+            <MeldList melds={melds} onUndeclare={onUndeclare} size="medium" />
+          )}
         </div>
       </section>
 
@@ -205,7 +181,7 @@ export function Hand({
         <h2 className="hand__label">Flowers &amp; seasons</h2>
         <div className="hand__tiles" data-testid="bonus-tiles">
           {bonus.length === 0 ? (
-            <p className="hand__empty">None yet</p>
+            <p className="hand__empty hand__empty--caption">None yet</p>
           ) : (
             bonus.map((tile, index) => (
               <Tile

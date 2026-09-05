@@ -51,6 +51,10 @@
   border: 1px dashed rgb(255 255 255 / 0.2);
 }
 
+.summary__group--declared {
+  background: rgb(255 255 255 / 0.08);
+}
+
 .summary__group--floater {
   opacity: 0.6;
   border: 1px dotted rgb(255 255 255 / 0.2);
@@ -90,62 +94,15 @@
   color: var(--muted);
 }
 
-.summary__actions {
+.summary__score-section {
   display: flex;
-  gap: 0.6rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.summary__button {
-  padding: 0.5rem 1.1rem;
-
-  font: inherit;
+.summary__section-label {
+  font-size: 1.05rem;
   font-weight: 600;
-  color: var(--button-ink);
-
-  /* A faint top-light sheen for a slight dome; the ghost variant opts back
-     out to its plain flat look below. */
-  background-color: var(--button-bg);
-  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.2) 0%, transparent 60%);
-  border: none;
-  border-radius: 0.4rem;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
-
-  cursor: pointer;
-  transition:
-    transform 80ms ease,
-    box-shadow 80ms ease;
-}
-
-.summary__button:hover:not(:disabled) {
-  box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
-}
-
-.summary__button:active:not(:disabled) {
-  transform: translateY(1px);
-  box-shadow: 0 1px 1px rgb(0 0 0 / 0.25);
-}
-
-.summary__button:disabled {
-  cursor: default;
-  opacity: 0.4;
-}
-
-.summary__button--ghost {
-  color: var(--fg);
-  background: rgb(255 255 255 / 0.12);
-  box-shadow: none;
-}
-
-.summary__button--ghost:hover:not(:disabled),
-.summary__button--ghost:active:not(:disabled) {
-  transform: none;
-  box-shadow: none;
-}
-
-.summary__button:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
 }
 
 .summary__score {
@@ -184,12 +141,15 @@
 .summary__pattern-row {
   display: flex;
   gap: 0.5rem;
-  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
 }
 
 .summary__pattern-faan {
+  min-width: 1.5rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .summary__pattern-description {

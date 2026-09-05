@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   type Hand,
   type HandScore,
@@ -9,7 +9,6 @@ import {
   type StandardTile,
   type WinCircumstance,
   type WinSource,
-  HAND_SIZE,
   LIMIT_FAAN,
   explainHand,
   kong,
@@ -34,18 +33,19 @@ export interface HandSummaryProps {
   /** Promotes a set the reading found to a meld on the table. */
   onDeclare: (meld: Set3) => void
   onWinChange: (source: WinSource | null, circumstances: readonly WinCircumstance[]) => void
-  onClear: () => void
 }
 
 function GroupRow({
   group,
   partial,
+  declared,
   onExpose,
   onKong,
   remainingFor,
 }: {
   group: Meld | PartialSet
   partial: boolean
+  declared: boolean
   onExpose?: (meld: Set3) => void
   onKong?: (meld: Set3) => void
   remainingFor?: (tile: StandardTile) => number
@@ -60,7 +60,9 @@ function GroupRow({
     remainingFor(group.tile) > 0
 
   return (
-    <li className={`summary__group${partial ? ' summary__group--partial' : ''}`}>
+    <li
+      className={`summary__group${partial ? ' summary__group--partial' : ''}${declared ? ' summary__group--declared' : ''}`}
+    >
       <span className="summary__group-tiles">
         {meldTiles(group).map((tile, tileIndex) => (
           <Tile key={tileIndex} tile={tile} size="small" />
@@ -96,12 +98,14 @@ function GroupRow({
 function GroupList({
   groups,
   partial = false,
+  declared = false,
   onExpose,
   onKong,
   remainingFor,
 }: {
   groups: readonly (Meld | PartialSet)[]
   partial?: boolean
+  declared?: boolean
   onExpose?: (meld: Set3) => void
   onKong?: (meld: Set3) => void
   remainingFor?: (tile: StandardTile) => number
@@ -115,6 +119,7 @@ function GroupList({
           key={`${meldKey(group)}-${index}`}
           group={group}
           partial={partial}
+          declared={declared}
           onExpose={onExpose}
           onKong={onKong}
           remainingFor={remainingFor}
@@ -145,9 +150,11 @@ function FloaterList({ tiles }: { tiles: readonly StandardTile[] }) {
 function ScorePanel({ score }: { score: HandScore }) {
   if (!score.isWinning) {
     return (
-      <p className="summary__no-win">
-        These fourteen tiles do not make four sets and a pair, so there is nothing to score yet.
-      </p>
+      <div className="summary__score">
+        <p className="summary__no-win">
+          Your tiles do not make four sets and a pair yet, so there is nothing to score.
+        </p>
+      </div>
     )
   }
 
@@ -160,10 +167,10 @@ function ScorePanel({ score }: { score: HandScore }) {
         {score.patterns.map((pattern) => (
           <li className="summary__pattern" key={pattern.id}>
             <div className="summary__pattern-row">
+              <span className="summary__pattern-faan">+{pattern.faan}</span>
               <span>
                 {pattern.name} <span aria-hidden="true">{pattern.chineseName}</span>
               </span>
-              <span className="summary__pattern-faan">{pattern.faan}</span>
             </div>
             <p className="summary__pattern-description">{pattern.description}</p>
           </li>
@@ -176,8 +183,8 @@ function ScorePanel({ score }: { score: HandScore }) {
 /**
  * Reads the hand back to the player: what it holds now, how far it has to go,
  * and — once there are fourteen tiles — what it scores. Only sets in the
- * concealed reading can be declared here; a set already on the table lives in
- * the Hand component instead.
+ * concealed reading can be declared here; sets already on the table are also
+ * included in the reading, but their controls remain in the hand drawer.
  */
 export function HandSummary({
   hand,
@@ -185,18 +192,9 @@ export function HandSummary({
   remainingFor,
   onDeclare,
   onWinChange,
-  onClear,
 }: HandSummaryProps) {
   const explanation = useMemo(() => explainHand(hand), [hand])
-  const isFull = explanation.handSize === HAND_SIZE
-  // A score is a snapshot of a particular hand and a set of scoring options, so
-  // it is kept with the inputs it was taken from and ignored once either moves on.
-  const [scored, setScored] = useState<{
-    hand: Hand
-    options: ScoringOptions
-    score: HandScore
-  } | null>(null)
-  const score = scored?.hand === hand && scored.options === options ? scored.score : null
+  const score = useMemo(() => scoreHand(hand, options), [hand, options])
 
   const handleExpose = (meld: Set3) => onDeclare({ ...meld, exposed: true })
   // A pung in the reading with a copy still free on the table can go straight
@@ -210,6 +208,7 @@ export function HandSummary({
       <p className="summary__headline">{explanation.headline}</p>
       <p className="summary__distance">{explanation.distance}</p>
 
+      <GroupList groups={explanation.declared} declared />
       <GroupList
         groups={explanation.groups}
         onExpose={handleExpose}
@@ -226,32 +225,15 @@ export function HandSummary({
         </p>
       )}
 
-      <WinPicker
-        win={hand.win ?? null}
-        circumstances={hand.circumstances ?? []}
-        onChange={onWinChange}
-      />
-
-      <div className="summary__actions">
-        <button
-          type="button"
-          className="summary__button"
-          disabled={!isFull}
-          onClick={() => setScored({ hand, options, score: scoreHand(hand, options) })}
-        >
-          Score hand
-        </button>
-        <button
-          type="button"
-          className="summary__button summary__button--ghost"
-          disabled={explanation.handSize === 0 && hand.bonus.length === 0}
-          onClick={onClear}
-        >
-          Clear
-        </button>
-      </div>
-
-      {score && <ScorePanel score={score} />}
+      <section className="summary__score-section">
+        <h2 className="summary__section-label">Score</h2>
+        <WinPicker
+          win={hand.win ?? null}
+          circumstances={hand.circumstances ?? []}
+          onChange={onWinChange}
+        />
+        <ScorePanel score={score} />
+      </section>
     </div>
   )
 }

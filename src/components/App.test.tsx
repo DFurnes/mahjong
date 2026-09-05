@@ -9,11 +9,11 @@ function boardTile(name: string) {
 }
 
 function handTiles() {
-  return within(screen.getByTestId('hand-tiles')).queryAllByRole('button')
+  return within(screen.getByTestId('hand-tiles-compact')).queryAllByRole('button')
 }
 
 function bonusTiles() {
-  return within(screen.getByTestId('bonus-tiles')).queryAllByRole('button')
+  return within(screen.getByTestId('bonus-tiles-compact')).queryAllByRole('button')
 }
 
 describe('building a hand', () => {
@@ -63,16 +63,10 @@ describe('building a hand', () => {
     expect(boardTile('Spring')).toBeDisabled()
   })
 
-  it('clears the hand and the tray', async () => {
-    const user = userEvent.setup()
+  it('does not show a bulk clear action', () => {
     render(<App />)
 
-    await user.click(boardTile('1 of Bamboo'))
-    await user.click(boardTile('Spring'))
-    await user.click(screen.getByRole('button', { name: 'Clear' }))
-
-    expect(handTiles()).toHaveLength(0)
-    expect(bonusTiles()).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument()
   })
 })
 
@@ -110,16 +104,17 @@ describe('explaining and scoring a hand', () => {
     ).toBeInTheDocument()
   })
 
-  it('only offers scoring once the hand is full', async () => {
+  it('updates the persistent score as the hand is built', async () => {
     const user = userEvent.setup()
     render(<App />)
 
-    expect(screen.getByRole('button', { name: 'Score hand' })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: 'Score' })).toBeVisible()
+    expect(screen.getByText(/nothing to score/)).toBeVisible()
 
     for (const name of WINNING) await user.click(boardTile(name))
 
-    expect(screen.getByRole('button', { name: 'Score hand' })).toBeEnabled()
     expect(screen.getByText('This is a winning hand.')).toBeInTheDocument()
+    expect(screen.getByText('8 faan')).toBeInTheDocument()
   })
 
   it('scores a full flush', async () => {
@@ -127,8 +122,6 @@ describe('explaining and scoring a hand', () => {
     render(<App />)
 
     for (const name of WINNING) await user.click(boardTile(name))
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
-
     expect(screen.getByText('8 faan')).toBeInTheDocument()
     expect(screen.getByText(/Full flush/)).toBeInTheDocument()
     expect(screen.getByText(/All sequences/)).toBeInTheDocument()
@@ -155,8 +148,6 @@ describe('explaining and scoring a hand', () => {
       '9 of Dots',
     ]
     for (const name of junk) await user.click(boardTile(name))
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
-
     expect(screen.getByText(/do not make four sets and a pair/)).toBeInTheDocument()
   })
 
@@ -165,7 +156,6 @@ describe('explaining and scoring a hand', () => {
     render(<App />)
 
     for (const name of WINNING) await user.click(boardTile(name))
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
     expect(screen.getByText('8 faan')).toBeInTheDocument()
 
     await user.click(handTiles()[0])
@@ -199,25 +189,11 @@ describe('declaring melds', () => {
     for (const name of WINNING) await user.click(boardTile(name))
 
     await user.click(screen.getAllByRole('button', { name: 'Expose' })[0])
-    expect(within(screen.getByTestId('meld-tiles')).getAllByRole('button')).toHaveLength(1)
+    expect(within(screen.getByTestId('meld-tiles-compact')).getAllByRole('button')).toHaveLength(1)
+    expect(screen.getByText(/^Exposed (chow|pung)/)).toBeVisible()
 
-    await user.click(within(screen.getByTestId('meld-tiles')).getAllByRole('button')[0])
-    expect(within(screen.getByTestId('meld-tiles')).queryAllByRole('button')).toHaveLength(0)
-  })
-
-  it('promotes an exposed pung to a kong, drawing the fourth copy off the table', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-
-    for (let i = 0; i < 3; i += 1) await user.click(boardTile('Red Dragon'))
-    expect(boardTile('Red Dragon')).toHaveAccessibleName('Red Dragon, 1 left')
-
-    await user.click(screen.getByRole('button', { name: 'Expose' }))
-    await user.click(screen.getByRole('button', { name: /Promote .* to a kong/ }))
-
-    const meldButton = within(screen.getByTestId('meld-tiles')).getAllByRole('button')[0]
-    expect(meldButton).toHaveAccessibleName(/Exposed kong of Red Dragon/)
-    expect(boardTile('Red Dragon')).toBeDisabled()
+    await user.click(within(screen.getByTestId('meld-tiles-compact')).getAllByRole('button')[0])
+    expect(within(screen.getByTestId('meld-tiles-compact')).queryAllByRole('button')).toHaveLength(0)
   })
 
   it('raises the faan for a self-drawn win', async () => {
@@ -226,8 +202,6 @@ describe('declaring melds', () => {
 
     for (const name of WINNING) await user.click(boardTile(name))
     await user.click(screen.getByRole('button', { name: 'Self-drawn' }))
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
-
     // Full flush (7) + all sequences (1), plus self-drawn (1) and fully concealed (1).
     expect(screen.getByText('10 faan')).toBeInTheDocument()
   })
@@ -255,8 +229,6 @@ describe('declaring melds', () => {
         { name: /East/ },
       ),
     )
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
-
     expect(screen.getByText(/Round wind/)).toBeInTheDocument()
     expect(screen.getByText('1 faan')).toBeInTheDocument()
   })
@@ -281,47 +253,45 @@ describe('declaring melds', () => {
     for (const name of WINNING) await user.click(boardTile(name))
     await user.click(screen.getByRole('button', { name: 'Self-drawn' }))
     await user.click(screen.getByRole('button', { name: /The last tile/ }))
-    await user.click(screen.getByRole('button', { name: 'Score hand' }))
-
     // Full flush (7) + all sequences (1) + self-drawn (1) + fully concealed (1) + last tile (1).
     expect(screen.getByText('11 faan')).toBeInTheDocument()
   })
 })
 
 describe('collapsing the tray', () => {
-  const toggle = () => screen.getByRole('button', { name: /Your hand/ })
+  const toggle = () => screen.getByRole('button', { name: /^Hand/ })
 
   const compactTiles = () =>
     within(screen.getByTestId('hand-tiles-compact')).queryAllByRole('button')
   const compactBonus = () =>
     within(screen.getByTestId('bonus-tiles-compact')).queryAllByRole('button')
+  const compactSlots = () =>
+    screen.getByTestId('hand-tiles-compact').querySelectorAll('.tile__slot')
 
-  it('starts expanded, with the full summary showing', () => {
+  it('starts collapsed, with the compact hand and page summary showing', () => {
     render(<App />)
 
-    expect(toggle()).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: 'Score hand' })).toBeVisible()
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByTestId('hand-tiles-compact')).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Score' })).toBeVisible()
     expect(screen.getByText('Your hand is empty.')).toBeVisible()
   })
 
-  it('takes the summary out of the page when collapsed, and brings it back', async () => {
+  it('keeps the page summary available when the hand drawer is collapsed', async () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(toggle())
-
-    // The body is `hidden`, so it leaves the accessibility tree entirely.
     expect(toggle()).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('button', { name: 'Score hand' })).not.toBeInTheDocument()
-    expect(screen.getByText('Your hand is empty.')).not.toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Score' })).toBeVisible()
+    expect(screen.getByText('Your hand is empty.')).toBeVisible()
 
     await user.click(toggle())
 
     expect(toggle()).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: 'Score hand' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Score' })).toBeVisible()
   })
 
-  it('shows a running count and status on the bar', async () => {
+  it('shows a running status on the bar', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -331,7 +301,6 @@ describe('collapsing the tray', () => {
       await user.click(boardTile(name))
     }
 
-    expect(toggle()).toHaveTextContent('3 / 14')
     expect(toggle()).toHaveTextContent('1 set · 11 away')
   })
 
@@ -340,7 +309,6 @@ describe('collapsing the tray', () => {
     render(<App />)
 
     await user.click(boardTile('East Wind'))
-    await user.click(toggle())
 
     expect(compactTiles()).toHaveLength(1)
     await user.click(compactTiles()[0])
@@ -349,12 +317,21 @@ describe('collapsing the tray', () => {
     expect(boardTile('East Wind')).toHaveAccessibleName('East Wind, 4 left')
   })
 
+  it('shows the remaining hand slots in the collapsed strip', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(compactSlots()).toHaveLength(14)
+
+    await user.click(boardTile('East Wind'))
+    expect(compactSlots()).toHaveLength(13)
+  })
+
   it('keeps bonus tiles visible in the collapsed strip', async () => {
     const user = userEvent.setup()
     render(<App />)
 
     await user.click(boardTile('Spring'))
-    await user.click(toggle())
 
     expect(compactBonus()).toHaveLength(1)
     expect(compactBonus()[0]).toHaveAccessibleName('Spring')

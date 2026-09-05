@@ -1,4 +1,5 @@
 import type { WinCircumstance, WinSource } from '../domain'
+import { ChoiceButton, ChoiceGroup } from './ChoiceGroup'
 import './WinPicker.css'
 
 export interface WinPickerProps {
@@ -60,49 +61,31 @@ export function WinPicker({ win, circumstances, onChange }: WinPickerProps) {
 
   return (
     <div className="win-picker">
-      <div className="win-picker__group" role="group" aria-label="How you won">
-        <span className="win-picker__label">How you won</span>
-        <div className="win-picker__options">
-          <button
-            type="button"
-            className={`win-picker__button${win === 'draw' ? ' win-picker__button--active' : ''}`}
-            aria-pressed={win === 'draw'}
-            onClick={() => selectSource('draw')}
-          >
-            Self-drawn <span aria-hidden="true">自摸</span>
-          </button>
-          <button
-            type="button"
-            className={`win-picker__button${win === 'discard' ? ' win-picker__button--active' : ''}`}
-            aria-pressed={win === 'discard'}
-            onClick={() => selectSource('discard')}
-          >
-            On a discard
-          </button>
-        </div>
-      </div>
+      <ChoiceGroup label="How you won" ariaLabel="How you won">
+        <ChoiceButton active={win === 'draw'} onClick={() => selectSource('draw')}>
+          Self-drawn
+        </ChoiceButton>
+        <ChoiceButton active={win === 'discard'} onClick={() => selectSource('discard')}>
+          On a discard
+        </ChoiceButton>
+      </ChoiceGroup>
 
-      <div className="win-picker__group" role="group" aria-label="Circumstances of the win">
-        <span className="win-picker__label">Anything special</span>
-        <div className="win-picker__options">
-          {CIRCUMSTANCES.map(({ id, label, appliesTo, glyph }) => {
-            const enabled = win !== null && appliesTo.includes(win)
-            const active = enabled && circumstances.includes(id)
-            return (
-              <button
-                key={id}
-                type="button"
-                className={`win-picker__button${active ? ' win-picker__button--active' : ''}`}
-                aria-pressed={active}
-                disabled={!enabled}
-                onClick={() => toggleCircumstance(id)}
-              >
-                {label} {win && <span aria-hidden="true">{glyph(win)}</span>}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      <ChoiceGroup label="Anything special?" ariaLabel="Circumstances of the win">
+        {CIRCUMSTANCES.map(({ id, label, appliesTo, glyph }) => {
+          const enabled = win !== null && appliesTo.includes(win)
+          const active = enabled && circumstances.includes(id)
+          return (
+            <ChoiceButton
+              key={id}
+              active={active}
+              disabled={!enabled}
+              onClick={() => toggleCircumstance(id)}
+            >
+              {label} {win && <span aria-hidden="true">{glyph(win)}</span>}
+            </ChoiceButton>
+          )
+        })}
+      </ChoiceGroup>
     </div>
   )
 }

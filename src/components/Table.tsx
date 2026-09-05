@@ -46,7 +46,7 @@ export function Table({ remaining, onSelect, handFull = false }: TableProps) {
     <div className="table">
       {TILE_GROUPS.map((group) => (
         <section className="table__group" key={group.label}>
-          <h2 className="table__label">{group.label}</h2>
+          <h3 className="table__label">{group.label}</h3>
           <div className="table__tiles">
             {group.tiles.map((tile) => {
               const left = remaining[tileId(tile)] ?? 0

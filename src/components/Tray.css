@@ -39,11 +39,6 @@
   letter-spacing: 0.08em;
 }
 
-.tray__count {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
 .tray__status {
   flex: 1;
   overflow: hidden;
