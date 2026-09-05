@@ -1,0 +1,25 @@
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.table__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.table__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.table__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}

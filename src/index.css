@@ -1,0 +1,57 @@
+:root {
+  --font-ui:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --felt: #14532d;
+  --felt-deep: #0d3b21;
+  --panel: #0b2f1b;
+  --fg: #f1f5f0;
+  --muted: #a7bfae;
+  --warn: #fbbf7c;
+  --focus: #fcd34d;
+
+  --tile-face: #fdfaf1;
+  --tile-face-shade: #ece6d6;
+  --tile-edge: #b8ae94;
+
+  /* One scale for every tile on the page, so a suit fits a single row on a phone. */
+  --tile-base: clamp(1.85rem, 7.4vw, 2.75rem);
+
+  --badge-bg: #0b2f1b;
+  --badge-ink: #dbe7dd;
+
+  --button-bg: #fcd34d;
+  --button-ink: #1f2a20;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/*
+ * An author-level `display` beats the UA stylesheet's `[hidden] { display: none }`,
+ * so anything hidden with the attribute needs this to actually disappear.
+ */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  color: var(--fg);
+
+  /* The lit gradient covers the first screen; felt carries on below it. */
+  background-color: var(--felt-deep);
+  background-image: radial-gradient(circle at 50% 0%, var(--felt) 0%, var(--felt-deep) 70%);
+  background-repeat: no-repeat;
+  background-size: 100% 100vh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}

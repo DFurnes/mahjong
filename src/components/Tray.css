@@ -1,0 +1,86 @@
+.tray {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tray__handle {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.15rem 0;
+
+  font: inherit;
+  color: var(--fg);
+  text-align: left;
+
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.tray__handle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+
+.tray__heading {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  flex: none;
+
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tray__count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.tray__status {
+  flex: 1;
+  overflow: hidden;
+
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
+/*
+ * A chevron drawn from a rotated corner. Expanded it points down (tap to
+ * close); collapsed it points up (tap to open).
+ */
+.tray__chevron {
+  flex: none;
+  align-self: center;
+  width: 0.5rem;
+  height: 0.5rem;
+  /* Nudge so the rotated square looks optically centred, not geometrically. */
+  margin-top: -0.15rem;
+
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.tray--collapsed .tray__chevron {
+  margin-top: 0.15rem;
+  transform: rotate(-135deg);
+}
+
+.tray__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
