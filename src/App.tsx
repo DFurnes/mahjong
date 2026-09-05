@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { explainHand } from './engine/hand'
 import type { ScoringOptions } from './engine/scoring'
-import { createMatchSetup, type MatchSetup } from './game'
+import { createGame, reduceGame, type GameCommand, type GameState } from './game'
 import { AppHeader, type AppRoute } from './components/AppHeader'
 import { Hand } from './components/Hand'
 import { HandSummary } from './components/HandSummary'
@@ -111,7 +111,7 @@ export default function App() {
   const { rules, setHouseRule, restoreDefaults } = useRules()
   const [route, setRoute] = useState(routeFromPath)
   const [rulesOpen, setRulesOpen] = useState(false)
-  const [matchSetup, setMatchSetup] = useState<MatchSetup | null>(null)
+  const [game, setGame] = useState<GameState | null>(null)
 
   useEffect(() => {
     const handlePopState = () => setRoute(routeFromPath())
@@ -124,7 +124,20 @@ export default function App() {
     setRoute(next)
   }, [])
   const closeRules = useCallback(() => setRulesOpen(false), [])
-  const startSetup = useCallback(() => setMatchSetup(createMatchSetup(rules)), [rules])
+  const startGame = useCallback(() => {
+    const values = new Uint32Array(1)
+    const seed = globalThis.crypto?.getRandomValues
+      ? globalThis.crypto.getRandomValues(values)[0]
+      : Date.now() >>> 0
+    setGame(createGame(rules, { seed }))
+  }, [rules])
+  const submitGameCommand = useCallback((command: GameCommand) => {
+    setGame((current) => {
+      if (current === null) return current
+      const result = reduceGame(current, command)
+      return result.ok ? result.state : current
+    })
+  }, [])
 
   return (
     <div className="app-shell">
@@ -132,12 +145,18 @@ export default function App() {
       {route === 'calculator' ? (
         <CalculatorPage rules={rules} />
       ) : (
-        <GamePage rules={rules} setup={matchSetup} onStart={startSetup} onEnd={() => setMatchSetup(null)} />
+        <GamePage
+          rules={rules}
+          game={game}
+          onStart={startGame}
+          onCommand={submitGameCommand}
+          onReplaceGame={setGame}
+        />
       )}
       <RulesDialog
         open={rulesOpen}
         rules={rules}
-        showNextGameNotice={route === 'game'}
+        showNextGameNotice={game !== null && game.phase.type !== 'match-ended'}
         onChange={setHouseRule}
         onRestore={restoreDefaults}
         onClose={closeRules}

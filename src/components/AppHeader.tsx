@@ -18,7 +18,7 @@ export function AppHeader({
         <p className="app-header__subtitle">
           {route === 'calculator'
             ? 'Build a hand and see how it scores.'
-            : 'Prepare a local game against three computer players.'}
+            : 'Play a local game against three computer players.'}
         </p>
       </div>
       <nav className="app-header__actions" aria-label="Main navigation">

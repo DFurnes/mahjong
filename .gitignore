@@ -12,8 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Playwright, used for local visual iteration — not part of the test suite.
+# Playwright browser binaries and generated test artifacts.
 .playwright-browsers
+test-results
+playwright-report
 
 # Editor directories and files
 .vscode/*

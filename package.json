@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",
     "test:simulation": "MAHJONG_STRESS=1 vitest run src/game/bot.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc -b",

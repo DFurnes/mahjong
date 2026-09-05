@@ -14,9 +14,19 @@ export interface GameProjection extends Omit<GameState, 'players' | 'liveWall' |
 
 export function projectGame(state: GameState, viewer: PlayerId): GameProjection {
   const players = {} as Record<PlayerId, PlayerProjection>
+  const latestResult = state.phase.type === 'hand-ended'
+    ? state.phase.result
+    : state.phase.type === 'match-ended'
+      ? state.history.at(-1)?.result
+      : undefined
+  const revealedWinners = latestResult?.type === 'win' ? latestResult.winners : []
   for (const id of [0, 1, 2, 3] as PlayerId[]) {
     const player = state.players[id]
-    players[id] = { ...player, concealed: id === viewer ? player.concealed : null, concealedCount: player.concealed.length }
+    players[id] = {
+      ...player,
+      concealed: id === viewer || revealedWinners.includes(id) ? player.concealed : null,
+      concealedCount: player.concealed.length,
+    }
   }
   const { liveWall, replacementWall, seed: _seed, events, phase, ...publicState } = state
   let publicPhase: ProjectedPhase

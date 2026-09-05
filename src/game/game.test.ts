@@ -66,6 +66,18 @@ describe('Phase 2 game mechanics', () => {
     expect(drawEvent?.tileUid).toBeUndefined()
   })
 
+  it('reveals winners after a hand while keeping other opponents concealed', () => {
+    const state = createGame(DEFAULT_RULE_SET, { seed: 4 })
+    state.phase = {
+      type: 'hand-ended',
+      result: { type: 'win', winners: [1], scores: {} as never, payments: [] },
+    }
+    const view = projectGame(state, 0)
+    expect(view.players[1].concealed).not.toBeNull()
+    expect(view.players[2].concealed).toBeNull()
+    expect(view.players[3].concealed).toBeNull()
+  })
+
   it('exposes only legal dealer actions after the deal', () => {
     const state = createGame(DEFAULT_RULE_SET, { seed: 13 })
     expect(legalActions(state, 1)).toEqual([])

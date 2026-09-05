@@ -113,8 +113,11 @@ Wait-shape faan (邊張, 坎張, 單吊) stays out on purpose: it is a
 Japanese/Taiwanese idea Hong Kong rules don't score, and scoring it would need
 tracking which tile completed the hand, which nothing else here needs.
 
-## Not modelled yet
+## Game interface
 
-The `/game` route still exposes only setup because the playable table belongs to
-Phase 4. Phase 3 provides projection-safe async controllers, deterministic bots,
-and automated match simulations. Game persistence and replay arrive in Phase 5.
+The `/game` route provides a complete local table against three deterministic
+computer players. It shows all public table information, keeps opponents'
+concealed hands private, offers only legal contextual actions, reveals winning
+hands and payments, and tracks hand history through the final standings.
+
+Game persistence and replay are not modelled yet; they arrive in Phase 5.
