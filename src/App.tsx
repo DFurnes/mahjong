@@ -1,31 +1,40 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { explainHand } from './engine/hand'
 import type { ScoringOptions } from './engine/scoring'
+import { createMatchSetup, type MatchSetup } from './game'
+import { AppHeader, type AppRoute } from './components/AppHeader'
 import { Hand } from './components/Hand'
 import { HandSummary } from './components/HandSummary'
+import { RulesDialog } from './components/RulesDialog'
 import { Table } from './components/Table'
 import { Tray } from './components/Tray'
 import { WindPicker } from './components/WindPicker'
 import { useMahjongTable } from './state/useMahjongTable'
+import { useRules } from './settings/useRules'
+import { GamePage } from './pages/GamePage'
 import './App.css'
 
-export default function App() {
+function routeFromPath(): AppRoute {
+  return /\/game\/?$/.test(window.location.pathname) ? 'game' : 'calculator'
+}
+
+function pathFor(route: AppRoute): string {
+  const base = window.location.pathname.replace(/\/game\/?$/, '').replace(/\/$/, '')
+  if (route === 'game') return base ? `${base}/game` : '/game'
+  return base ? `${base}/` : '/'
+}
+
+function CalculatorPage({ rules }: { rules: ScoringOptions['rules'] }) {
   const table = useMahjongTable()
   const [collapsed, setCollapsed] = useState(true)
   const [options, setOptions] = useState<ScoringOptions>({})
+  const scoringOptions = useMemo(() => ({ ...options, rules }), [options, rules])
 
   const { concealed, melds, bonus } = table.hand
   const explanation = useMemo(() => explainHand(table.hand), [table.hand])
 
   return (
     <div className="app">
-      <header className="app__header">
-        <h1 className="app__title">Hong Kong Mahjong</h1>
-        <p className="app__subtitle">
-          Pick your seat, then tap tiles to build a hand. Tap a tile in your hand to put it back.
-        </p>
-      </header>
-
       <main className="app__board">
         <div className="app__winds">
           <WindPicker
@@ -59,7 +68,7 @@ export default function App() {
           <section className="app__summary" aria-label="Hand sets and score">
             <HandSummary
               hand={table.hand}
-              options={options}
+              options={scoringOptions}
               remainingFor={table.remainingFor}
               onDeclare={table.declareMeld}
               onWinChange={table.setWin}
@@ -94,6 +103,45 @@ export default function App() {
           />
         </Tray>
       </footer>
+    </div>
+  )
+}
+
+export default function App() {
+  const { rules, setHouseRule, restoreDefaults } = useRules()
+  const [route, setRoute] = useState(routeFromPath)
+  const [rulesOpen, setRulesOpen] = useState(false)
+  const [matchSetup, setMatchSetup] = useState<MatchSetup | null>(null)
+
+  useEffect(() => {
+    const handlePopState = () => setRoute(routeFromPath())
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const navigate = useCallback((next: AppRoute) => {
+    window.history.pushState(null, '', pathFor(next))
+    setRoute(next)
+  }, [])
+  const closeRules = useCallback(() => setRulesOpen(false), [])
+  const startSetup = useCallback(() => setMatchSetup(createMatchSetup(rules)), [rules])
+
+  return (
+    <div className="app-shell">
+      <AppHeader route={route} onNavigate={navigate} onOpenRules={() => setRulesOpen(true)} />
+      {route === 'calculator' ? (
+        <CalculatorPage rules={rules} />
+      ) : (
+        <GamePage rules={rules} setup={matchSetup} onStart={startSetup} onEnd={() => setMatchSetup(null)} />
+      )}
+      <RulesDialog
+        open={rulesOpen}
+        rules={rules}
+        showNextGameNotice={route === 'game'}
+        onChange={setHouseRule}
+        onRestore={restoreDefaults}
+        onClose={closeRules}
+      />
     </div>
   )
 }

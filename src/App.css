@@ -1,23 +1,8 @@
+.app-shell,
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-.app__header {
-  padding: 1rem 1rem 0.5rem;
-}
-
-.app__title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.app__subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
 }
 
 .app__board {
@@ -59,7 +44,6 @@
 
 @media (width >= 60rem) {
   .app__board,
-  .app__header,
   .app__tray {
     padding-inline: 2rem;
   }

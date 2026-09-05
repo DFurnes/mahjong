@@ -15,7 +15,7 @@ import {
   type ScoringContext,
   type WinningHand,
 } from './patterns'
-import { LIMIT_FAAN } from './rules'
+import { DEFAULT_RULE_SET, type RuleSet } from './rules'
 
 export interface MatchedPattern {
   id: string
@@ -26,19 +26,33 @@ export interface MatchedPattern {
 }
 
 export interface HandScore {
-  isWinning: boolean
-  /** Total faan, capped at {@link LIMIT_FAAN}. */
+  isWinningShape: boolean
+  isLegalWin: boolean
+  /** Total faan, capped by the resolved rules. */
   faan: number
   patterns: MatchedPattern[]
   /** The reading that produced this score. */
   hand: WinningHand | null
+  minimumFaan: number
 }
 
-const NO_SCORE: HandScore = { isWinning: false, faan: 0, patterns: [], hand: null }
+function noScore(rules: Readonly<RuleSet>): HandScore {
+  return {
+    isWinningShape: false,
+    isLegalWin: false,
+    faan: 0,
+    patterns: [],
+    hand: null,
+    minimumFaan: rules.minimumFaan,
+  }
+}
 
-function scoreWinningHand(context: ScoringContext): HandScore {
+function scoreWinningHand(context: ScoringContext, rules: Readonly<RuleSet>): HandScore {
   const matched = FAAN_PATTERNS.filter(
-    (pattern) => !pattern.fallback && pattern.matches(context),
+    (pattern) =>
+      !pattern.fallback &&
+      (pattern.stability.type === 'core' || rules.houseRules[pattern.stability.rule]) &&
+      pattern.matches(context),
   )
 
   const superseded = new Set(matched.flatMap((pattern) => pattern.supersedes ?? []))
@@ -59,15 +73,20 @@ function scoreWinningHand(context: ScoringContext): HandScore {
 
   const total = patterns.reduce((sum, pattern) => sum + pattern.faan, 0)
 
+  const faan = Math.min(total, rules.limitFaan)
   return {
-    isWinning: true,
-    faan: Math.min(total, LIMIT_FAAN),
+    isWinningShape: true,
+    isLegalWin: faan >= rules.minimumFaan,
+    faan,
     patterns,
     hand: context.hand,
+    minimumFaan: rules.minimumFaan,
   }
 }
 
 export interface ScoringOptions {
+  /** The resolved rules. Defaults to the Version 1 Hong Kong preset. */
+  rules?: Readonly<RuleSet>
   /** The player's own seat wind, if chosen. Unlocks the seat-wind faan (and flowers matched to it). */
   seatWind?: Wind
   /** The prevailing wind of the round, if chosen. Unlocks the round-wind faan. */
@@ -81,7 +100,8 @@ export interface ScoringOptions {
  * faan. Leaving any of them unset simply scores nothing for it.
  */
 export function scoreHand(hand: Hand, options: ScoringOptions = {}): HandScore {
-  if (handSize(hand) !== HAND_SIZE) return NO_SCORE
+  const rules = options.rules ?? DEFAULT_RULE_SET
+  if (handSize(hand) !== HAND_SIZE) return noScore(rules)
 
   const declared = hand.melds
   const candidates: WinningHand[] = completeDecompositions(hand.concealed, declared).map(
@@ -92,7 +112,7 @@ export function scoreHand(hand: Hand, options: ScoringOptions = {}): HandScore {
     candidates.push({ kind: 'special', id: 'thirteen-orphans' })
   }
 
-  if (candidates.length === 0) return NO_SCORE
+  if (candidates.length === 0) return noScore(rules)
 
   const tiles = handTiles(hand)
   const concealed = isConcealedHand(hand)
@@ -109,7 +129,7 @@ export function scoreHand(hand: Hand, options: ScoringOptions = {}): HandScore {
         win: hand.win,
         circumstances,
         concealed,
-      }),
+      }, rules),
     )
     .reduce((best, score) => (score.faan > best.faan ? score : best))
 }

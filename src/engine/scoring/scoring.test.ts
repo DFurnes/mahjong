@@ -3,7 +3,14 @@ import { concealedHand, type Hand } from '../hand/types'
 import { kong, pung } from '../hand/melds'
 import { hand } from '../testing/testHands'
 import { bonus, dragon, suited, wind } from '../tiles/tiles'
-import { LIMIT_FAAN, type ScoringOptions, scoreHand } from './index'
+import {
+  copyRuleSet,
+  DEFAULT_RULE_SET,
+  FAAN_PATTERNS,
+  LIMIT_FAAN,
+  type ScoringOptions,
+  scoreHand,
+} from './index'
 
 const idsOf = (notation: string, options?: ScoringOptions) =>
   scoreHand(concealedHand(hand(notation)), options).patterns.map((p) => p.id)
@@ -13,14 +20,14 @@ const faanOf = (notation: string, options?: ScoringOptions) =>
 describe('hands that cannot be scored', () => {
   it('rejects a hand that is not fourteen tiles', () => {
     expect(scoreHand(concealedHand(hand('b123 b456 c789 we we we dr')))).toMatchObject({
-      isWinning: false,
+      isWinningShape: false,
       faan: 0,
       patterns: [],
     })
   })
 
   it('rejects fourteen tiles that do not make four sets and a pair', () => {
-    expect(scoreHand(concealedHand(hand('b135 c246 d789 we ws ww wn dr'))).isWinning).toBe(false)
+    expect(scoreHand(concealedHand(hand('b135 c246 d789 we ws ww wn dr'))).isWinningShape).toBe(false)
   })
 
   it('does not count bonus tiles toward the fourteen', () => {
@@ -28,7 +35,7 @@ describe('hands that cannot be scored', () => {
       ...hand('b123 b456 c789 we we we dr dr'),
       bonus('flower', 1),
     ])
-    expect(scoreHand(withFlowers).isWinning).toBe(true)
+    expect(scoreHand(withFlowers).isWinningShape).toBe(true)
   })
 })
 
@@ -76,6 +83,17 @@ describe('faan patterns', () => {
     expect(idsOf('dr dr dr dg dg dg dw dw dw b123 b44')).not.toContain('small-dragons')
   })
 
+  it('scores each ordinary dragon pung and lets the special dragon hands absorb them', () => {
+    expect(idsOf('dr dr dr b123 b456 c789 d11')).toContain('red-dragon-pung')
+    expect(idsOf('dg dg dg b123 b456 c789 d11')).toContain('green-dragon-pung')
+    expect(idsOf('dw dw dw b123 b456 c789 d11')).toContain('white-dragon-pung')
+
+    const small = idsOf('dr dr dr dg dg dg b123 b456 dw dw')
+    expect(small).toContain('small-dragons')
+    expect(small).not.toContain('red-dragon-pung')
+    expect(small).not.toContain('green-dragon-pung')
+  })
+
   it('scores small and great winds', () => {
     expect(idsOf('we we we ws ws ws ww ww ww b123 wn wn')).toContain('small-winds')
     expect(idsOf('we we we ws ws ws ww ww ww wn wn wn b11')).toContain('great-winds')
@@ -111,7 +129,7 @@ describe('faan patterns', () => {
     const ids = idsOf('we we we dr dr dr b789 b456 b11', { seatWind: 'east' })
     expect(ids).toContain('half-flush')
     expect(ids).toContain('seat-wind')
-    expect(faanOf('we we we dr dr dr b789 b456 b11', { seatWind: 'east' })).toBe(4)
+    expect(faanOf('we we we dr dr dr b789 b456 b11', { seatWind: 'east' })).toBe(5)
   })
 
   it('scores the round wind pung when it matches the chosen round', () => {
@@ -132,7 +150,7 @@ describe('faan patterns', () => {
     const ids = idsOf('b111 b999 we we we dg dg dg c11')
     expect(ids).toContain('mixed-terminals')
     expect(ids).not.toContain('all-pungs')
-    expect(faanOf('b111 b999 we we we dg dg dg c11')).toBe(10)
+    expect(faanOf('b111 b999 we we we dg dg dg c11')).toBe(11)
 
     const allHonours = idsOf('we we we ws ws ws dr dr dr dg dg dg dw dw')
     expect(allHonours).not.toContain('mixed-terminals')
@@ -205,7 +223,7 @@ describe('faan patterns', () => {
 
   it('scores thirteen orphans', () => {
     const score = scoreHand(concealedHand(hand('b19 c19 d19 we ws ww wn dr dg dw dw')))
-    expect(score.isWinning).toBe(true)
+    expect(score.isWinningShape).toBe(true)
     expect(score.patterns.map((p) => p.id)).toEqual(['thirteen-orphans'])
     expect(score.faan).toBe(LIMIT_FAAN)
     expect(score.hand).toMatchObject({ kind: 'special', id: 'thirteen-orphans' })
@@ -278,7 +296,7 @@ describe('how the hand was won', () => {
 describe('the rest of situational faan', () => {
   // No wind tiles at all, so seat/round wind never gets a chance to add faan
   // of its own here — only the circumstance under test should move the score.
-  const BASE = 'b123 b456 c789 dr dr dr d11'
+  const BASE = 'b123 b456 c789 d123 we we'
 
   it('scores the last tile drawn, on top of self-draw and fully concealed', () => {
     const won: Hand = { ...concealedHand(hand(BASE)), win: 'draw', circumstances: ['last-tile'] }
@@ -356,7 +374,7 @@ describe('the rest of situational faan', () => {
 })
 
 describe('flowers and seasons', () => {
-  const BASE = 'b123 b456 c789 dr dr dr d11'
+  const BASE = 'b123 b456 c789 d123 we we'
 
   it('scores a flower matching the chosen seat', () => {
     const won = concealedHand([...hand(BASE), bonus('flower', 1)])
@@ -414,5 +432,38 @@ describe('the limit', () => {
       concealedHand(hand('we we we ws ws ws ww ww ww wn wn wn dr dr')),
     )
     expect(score.faan).toBe(LIMIT_FAAN)
+  })
+})
+
+describe('resolved rules', () => {
+  it('gives every pattern an explicit stability category', () => {
+    expect(FAAN_PATTERNS.every((pattern) => pattern.stability.type === 'core' || pattern.stability.rule.length > 0)).toBe(true)
+  })
+
+  it('filters a disabled house pattern before supersession', () => {
+    const rules = copyRuleSet(DEFAULT_RULE_SET)
+    rules.houseRules['nine-gates'] = false
+    const score = scoreHand(concealedHand(hand('b11123455678999')), { rules })
+    expect(score.patterns.map((pattern) => pattern.id)).not.toContain('nine-gates')
+    expect(score.patterns.map((pattern) => pattern.id)).toContain('full-flush')
+  })
+
+  it('reports a winning shape separately from the minimum needed in a game', () => {
+    const score = scoreHand(concealedHand(hand('b123 b456 c789 we we we dr dr')))
+    expect(score).toMatchObject({
+      isWinningShape: true,
+      isLegalWin: false,
+      faan: 0,
+      minimumFaan: 3,
+    })
+  })
+
+  it('uses the resolved limit and minimum', () => {
+    const rules = copyRuleSet(DEFAULT_RULE_SET)
+    rules.limitFaan = 7
+    rules.minimumFaan = 8
+    const score = scoreHand(concealedHand(hand('b123 b456 b789 b123 b11')), { rules })
+    expect(score.faan).toBe(7)
+    expect(score.isLegalWin).toBe(false)
   })
 })

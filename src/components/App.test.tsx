@@ -1,7 +1,12 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from '../App'
+
+beforeEach(() => {
+  localStorage.clear()
+  window.history.replaceState(null, '', '/')
+})
 
 /** The board button for a tile, identified by its accessible name. */
 function boardTile(name: string) {

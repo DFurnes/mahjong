@@ -25,7 +25,7 @@ import {
   isTerminal,
   isTerminalOrHonour,
 } from '../tiles/tiles'
-import { LIMIT_FAAN } from './rules'
+import { LIMIT_FAAN, type HouseRuleId } from './rules'
 
 /** How a hand qualified as a win. */
 export type WinningHand =
@@ -63,8 +63,8 @@ export interface FaanPattern {
   supersedes?: readonly string[]
   /** Only scored when no other pattern matched. */
   fallback?: boolean
-  /** 'core' is played at every Hong Kong table; 'house' varies and is worth a toggle later. */
-  variant?: 'core' | 'house'
+  /** Core patterns are fixed; house patterns name the stable preference that controls them. */
+  stability: { type: 'core' } | { type: 'house'; rule: HouseRuleId }
   matches(context: ScoringContext): boolean
 }
 
@@ -155,7 +155,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '平和',
     description: 'Every set is a run of three consecutive tiles, and there are no honour tiles.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       isStandardWin(context) && standardMelds(context).every(isChow) && !hasHonours(context),
   },
@@ -165,7 +165,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '對對和',
     description: 'Every set is three of the same tile — no runs anywhere in the hand.',
     faan: 3,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       isStandardWin(context) &&
       standardMelds(context).length === 4 &&
@@ -177,7 +177,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '混一色',
     description: 'Only one suit appears, mixed freely with winds and dragons.',
     faan: 3,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => suitsUsed(context).size === 1 && hasHonours(context),
   },
   {
@@ -187,8 +187,35 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'The entire hand is one suit, with no winds or dragons at all.',
     faan: 7,
     supersedes: ['half-flush'],
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => suitsUsed(context).size === 1 && !hasHonours(context),
+  },
+  {
+    id: 'red-dragon-pung',
+    name: 'Red dragon',
+    chineseName: '紅中',
+    description: 'A triplet or kong of Red Dragons.',
+    faan: 1,
+    stability: { type: 'core' },
+    matches: (context) => dragonPungs(context).includes('red'),
+  },
+  {
+    id: 'green-dragon-pung',
+    name: 'Green dragon',
+    chineseName: '發財',
+    description: 'A triplet or kong of Green Dragons.',
+    faan: 1,
+    stability: { type: 'core' },
+    matches: (context) => dragonPungs(context).includes('green'),
+  },
+  {
+    id: 'white-dragon-pung',
+    name: 'White dragon',
+    chineseName: '白板',
+    description: 'A triplet or kong of White Dragons.',
+    faan: 1,
+    stability: { type: 'core' },
+    matches: (context) => dragonPungs(context).includes('white'),
   },
   {
     id: 'small-dragons',
@@ -196,7 +223,8 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '小三元',
     description: 'Two of the three dragons as triplets, plus the third dragon as the pair.',
     faan: 5,
-    variant: 'core',
+    supersedes: ['red-dragon-pung', 'green-dragon-pung', 'white-dragon-pung'],
+    stability: { type: 'core' },
     matches: (context) => {
       const pair = pairTile(context)
       return dragonPungs(context).length === 2 && pair !== null && pair.kind === 'dragon'
@@ -208,8 +236,13 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '大三元',
     description: 'All three dragons — Red, Green, and White — as triplets.',
     faan: 8,
-    supersedes: ['small-dragons'],
-    variant: 'core',
+    supersedes: [
+      'small-dragons',
+      'red-dragon-pung',
+      'green-dragon-pung',
+      'white-dragon-pung',
+    ],
+    stability: { type: 'core' },
     matches: (context) => dragonPungs(context).length === 3,
   },
   {
@@ -218,7 +251,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '門風',
     description: 'A triplet of the wind matching the seat you chose.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       context.seatWind !== undefined && windPungs(context).includes(context.seatWind),
   },
@@ -228,7 +261,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '圈風',
     description: 'A triplet of the wind matching the current round. Stacks with the seat wind.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       context.roundWind !== undefined && windPungs(context).includes(context.roundWind),
   },
@@ -238,7 +271,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '自摸',
     description: "The winning tile was drawn, not claimed from another player's discard.",
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.win === 'draw',
   },
   {
@@ -247,7 +280,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '門前清',
     description: 'No meld was claimed from a discard anywhere in the hand.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.win !== undefined && context.concealed,
   },
   {
@@ -256,7 +289,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '海底撈月',
     description: 'Won by drawing the very last tile in the wall.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.win === 'draw' && context.circumstances.includes('last-tile'),
   },
   {
@@ -265,7 +298,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '河底撈魚',
     description: 'Won by claiming the very last discard of the hand.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.win === 'discard' && context.circumstances.includes('last-tile'),
   },
   {
@@ -274,7 +307,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '槓上開花',
     description: 'Won on the replacement tile drawn immediately after declaring a kong.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.win === 'draw' && context.circumstances.includes('after-kong'),
   },
   {
@@ -283,7 +316,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '搶槓',
     description: "Won by claiming a tile another player was adding to an already-declared pung.",
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       context.win === 'discard' && context.circumstances.includes('robbing-kong'),
   },
@@ -294,7 +327,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'The dealer wins with the hand as first dealt, before discarding anything.',
     faan: LIMIT_FAAN,
     supersedes: ['self-draw', 'fully-concealed'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'heavenly-hand' },
     matches: (context) =>
       context.seatWind === 'east' &&
       context.win === 'draw' &&
@@ -307,7 +340,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: "A non-dealer wins by claiming the dealer's very first discard.",
     faan: LIMIT_FAAN,
     supersedes: ['fully-concealed'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'earthly-hand' },
     matches: (context) =>
       context.seatWind !== undefined &&
       context.seatWind !== 'east' &&
@@ -320,7 +353,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '小四喜',
     description: 'Three of the four winds as triplets, plus the fourth wind as the pair.',
     faan: 13,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => {
       const pair = pairTile(context)
       return windPungs(context).length === 3 && pair !== null && pair.kind === 'wind'
@@ -333,7 +366,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'All four winds — East, South, West, and North — as triplets.',
     faan: 13,
     supersedes: ['small-winds'],
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => windPungs(context).length === 4,
   },
   {
@@ -343,7 +376,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'Every tile is a wind or a dragon — no numbered suits at all.',
     faan: 10,
     supersedes: ['all-pungs', 'half-flush', 'mixed-terminals'],
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.tiles.every(isHonour),
   },
   {
@@ -353,7 +386,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'Every tile is a 1 or a 9 — no honours and nothing in the middle.',
     faan: 10,
     supersedes: ['all-pungs', 'mixed-terminals'],
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.tiles.every(isTerminal),
   },
   {
@@ -364,7 +397,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
       'Every set is a triplet of a terminal, a wind, or a dragon, and both terminals and honours appear.',
     faan: 10,
     supersedes: ['all-pungs'],
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       isStandardWin(context) &&
       standardMelds(context).every(isPungLike) &&
@@ -380,7 +413,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
       'Fully concealed, one suit only: 1-1-1-2-3-4-5-6-7-8-9-9-9 plus one more tile of that suit.',
     faan: LIMIT_FAAN,
     supersedes: ['full-flush', 'all-chows'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'nine-gates' },
     matches: isNineGates,
   },
   {
@@ -390,7 +423,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'All four sets are kongs.',
     faan: LIMIT_FAAN,
     supersedes: ['all-pungs'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'four-kongs' },
     matches: (context) =>
       isStandardWin(context) &&
       standardMelds(context).length === 4 &&
@@ -403,7 +436,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'All four sets are triplets, and none of them were claimed from a discard.',
     faan: LIMIT_FAAN,
     supersedes: ['all-pungs', 'fully-concealed'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'four-concealed-pungs' },
     // Like fully-concealed, this is about how the win happened, so it only
     // applies once the player has said how they won.
     matches: (context) =>
@@ -419,7 +452,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'Every tile is bamboo 2, 3, 4, 6, or 8, or the Green Dragon.',
     faan: LIMIT_FAAN,
     supersedes: ['half-flush', 'full-flush'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'all-green' },
     matches: (context) => context.tiles.every(isGreenTile),
   },
   {
@@ -428,7 +461,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '門花',
     description: 'The flower matching the seat you chose.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       context.seatWind !== undefined && bonusOf(context, 'flower', SEAT_INDEX[context.seatWind]),
   },
@@ -438,7 +471,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     chineseName: '門季',
     description: 'The season matching the seat you chose.',
     faan: 1,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) =>
       context.seatWind !== undefined && bonusOf(context, 'season', SEAT_INDEX[context.seatWind]),
   },
@@ -449,7 +482,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'All four flowers, regardless of seat.',
     faan: 2,
     supersedes: ['seat-flower'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'all-flowers' },
     matches: (context) => hasAllOf(context, 'flower'),
   },
   {
@@ -459,7 +492,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: 'All four seasons, regardless of seat.',
     faan: 2,
     supersedes: ['seat-season'],
-    variant: 'house',
+    stability: { type: 'house', rule: 'all-seasons' },
     matches: (context) => hasAllOf(context, 'season'),
   },
   {
@@ -469,7 +502,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description:
       'One of every terminal and honour tile, plus a matching second copy of one of them as the pair.',
     faan: LIMIT_FAAN,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: (context) => context.hand.kind === 'special' && context.hand.id === 'thirteen-orphans',
   },
   {
@@ -479,7 +512,7 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     description: "A valid win that doesn't match any named pattern, so it scores nothing on its own.",
     faan: 0,
     fallback: true,
-    variant: 'core',
+    stability: { type: 'core' },
     matches: isStandardWin,
   },
 ]

@@ -152,7 +152,7 @@ function FloaterList({ tiles }: { tiles: readonly StandardTile[] }) {
 }
 
 function ScorePanel({ score }: { score: HandScore }) {
-  if (!score.isWinning) {
+  if (!score.isWinningShape) {
     return (
       <div className="summary__score">
         <p className="summary__no-win">
@@ -167,6 +167,11 @@ function ScorePanel({ score }: { score: HandScore }) {
       <p className="summary__faan">
         {score.faan} faan{score.faan === LIMIT_FAAN ? ' (limit)' : ''}
       </p>
+      {!score.isLegalWin && (
+        <p className="summary__no-win">
+          Winning shape, but below the {score.minimumFaan}-faan minimum for a game.
+        </p>
+      )}
       <ul className="summary__patterns">
         {score.patterns.map((pattern) => (
           <li className="summary__pattern" key={pattern.id}>

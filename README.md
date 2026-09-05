@@ -1,7 +1,8 @@
 # Hong Kong Mahjong
 
-A tile board for Hong Kong–style mahjong: tap tiles to build a hand, and the app
-tells you what the hand holds, how far it is from winning, and what it scores.
+A Hong Kong–style mahjong calculator at `/`, with shared rules settings and a
+pre-game setup screen at `/game`. Tap tiles to build a hand and the calculator
+tells you what it holds, how far it is from winning, and what it scores.
 
 Eventually this will grow into a playable game, so the rules live in a pure
 TypeScript layer that knows nothing about React.
@@ -28,7 +29,10 @@ src/
     scoring/       faan patterns, rules and the scorer that applies them
     testing/       test-only hand builders (not part of the public engine API)
     index.ts       convenience facade; each responsibility also has its own barrel
-  state/           useMahjongTable — the one piece of mutable state
+  game/            UI-independent match setup; later phases add mechanics
+  settings/        persisted rule preferences and React state
+  pages/           route-level interfaces
+  state/           calculator hand state
   components/      Tile, Table, Hand, HandSummary
 ```
 
@@ -73,15 +77,29 @@ while a hand is only part-built. `shanten` is the conventional number, one lower
 worth fourteen slot-tiles — that reads as four sets and a pair. Each faan
 pattern in `engine/scoring/patterns.ts` is a self-contained predicate, so
 extending the rulebook means adding entries to that list. Patterns stack, capped
-at the 13-faan limit, except where one `supersedes` a weaker pattern it implies.
+at the configured limit, except where one `supersedes` a weaker pattern it
+implies. Results distinguish a winning tile shape from a legal game win: the
+default game requires 3 faan, while the calculator still explains a complete
+hand below that minimum.
 
-The rulebook covers old-style Hong Kong scoring plus the popular limit hands
+The Version 1 `hong-kong-default` preset uses a 3-faan minimum and 13-faan
+limit. It covers old-style Hong Kong scoring plus the popular limit hands
 (混么九, 九蓮寶燈, 十八羅漢, 坎坎和, 綠一色), the seat and round wind (so a
-matching wind pung correctly doubles), the rest of the situational faan (last
+matching wind pung correctly doubles), one faan for each dragon pung, the rest
+of the situational faan (last
 tile, robbing a kong, the kong replacement tile, 天和/地和), and flowers and
-seasons scored against the seat. Each pattern carries a `variant` of `'core'`
-or `'house'`, an unused hook today — every pattern always applies — but meant
-for a future settings screen that lets a table turn the house-variant ones off.
+seasons scored against the seat. Every pattern is explicitly core or belongs to
+a stable house-rule ID. The Rules menu can independently disable Heavenly Hand,
+Earthly Hand, Nine Gates, Four Kongs, Four Concealed Triplets, All Green, All
+Flowers, and All Seasons. Preferences are saved locally; an active game setup
+retains the rules snapshot with which it started.
+
+Hong Kong old-style tables vary considerably. Version 1 intentionally excludes
+the no-flowers bonus and seven pairs rather than silently selecting one of their
+conflicting common definitions. Adding either requires a future preset version
+or an explicit house rule and saved-data migration. Pattern and house-rule IDs
+are persistent API values and must not be renamed without migration.
+
 Wait-shape faan (邊張, 坎張, 單吊) stays out on purpose: it is a
 Japanese/Taiwanese idea Hong Kong rules don't score, and scoring it would need
 tracking which tile completed the hand, which nothing else here needs.
@@ -89,7 +107,6 @@ tracking which tile completed the hand, which nothing else here needs.
 ## Not modelled yet
 
 Turning faan into money — the faan→points table, and who pays whom on a
-self-draw versus a discard. Dealer rotation and any other multi-player game
-state (this app scores one hand at a time, from one seat's point of view). The
-settings screen the `variant` tag on each faan pattern is waiting for, to let a
-table turn house rules on or off instead of always scoring them.
+self-draw versus a discard. Dealer rotation and multi-player game mechanics (the
+`/game` route currently captures and displays a rules snapshot only). Game
+persistence, bots, and the playable table arrive in later phases.
