@@ -13,8 +13,8 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [seatWind, setSeatWind] = useState<Wind | null>(null)
 
-  const { hand, bonus } = table.state
-  const explanation = useMemo(() => explainHand(hand), [hand])
+  const { concealed, melds, bonus } = table.hand
+  const explanation = useMemo(() => explainHand(table.hand), [table.hand])
 
   return (
     <div className="app">
@@ -37,17 +37,36 @@ export default function App() {
       <footer className="app__tray">
         <Tray
           title="Your hand"
-          count={`${hand.length} / ${HAND_SIZE}`}
+          count={`${explanation.handSize} / ${HAND_SIZE}`}
           status={explanation.brief}
           collapsed={collapsed}
           onToggle={() => setCollapsed((wasCollapsed) => !wasCollapsed)}
-          peek={<Hand compact tiles={hand} bonus={bonus} onReturn={table.returnTile} />}
+          peek={
+            <Hand
+              compact
+              tiles={concealed}
+              melds={melds}
+              bonus={bonus}
+              onReturn={table.returnTile}
+              onUndeclare={table.undeclareMeld}
+              onKong={table.promoteKong}
+            />
+          }
         >
-          <Hand tiles={hand} bonus={bonus} onReturn={table.returnTile} />
+          <Hand
+            tiles={concealed}
+            melds={melds}
+            bonus={bonus}
+            onReturn={table.returnTile}
+            onUndeclare={table.undeclareMeld}
+            onKong={table.promoteKong}
+          />
           <HandSummary
-            tiles={hand}
-            bonusCount={bonus.length}
+            hand={table.hand}
             seatWind={seatWind}
+            remainingFor={table.remainingFor}
+            onDeclare={table.declareMeld}
+            onWinChange={table.setWin}
             onClear={table.clear}
           />
         </Tray>

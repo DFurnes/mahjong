@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { bestDecomposition, completeDecompositions, decompose } from './decompose'
-import { meldKey } from './melds'
+import { allSets, bestDecomposition, completeDecompositions, decompose } from './decompose'
+import { kong, meldKey, pung } from './melds'
 import { hand } from './testHands'
-import { bonus } from './tiles'
+import { bonus, wind } from './tiles'
 
 const keysOf = (melds: readonly { type: string }[]) => melds.map((m) => meldKey(m as never)).sort()
 
@@ -75,5 +75,33 @@ describe('decomposing a partial hand', () => {
     const reading = bestDecomposition(decompose(hand('b123 b456 b789')))
     expect(reading!.melds).toHaveLength(3)
     expect(reading!.floaters).toHaveLength(0)
+  })
+})
+
+describe('declared melds', () => {
+  const eastPung = pung(wind('east'), true)
+
+  it('completes from eleven concealed tiles once a meld is declared', () => {
+    const readings = completeDecompositions(hand('b123 b456 c789 dr dr'), [eastPung])
+
+    expect(readings).toHaveLength(1)
+    expect(readings[0].declared).toEqual([eastPung])
+    expect(allSets(readings[0])).toHaveLength(4)
+  })
+
+  it('rejects fourteen concealed tiles once a meld is declared — that is one slot too many', () => {
+    expect(completeDecompositions(hand('b123 b456 c789 we we we dr dr'), [eastPung])).toEqual([])
+  })
+
+  it('carries the declared meld onto a partial reading too', () => {
+    const reading = bestDecomposition(decompose(hand('b123 b456'), [eastPung]))
+    expect(reading!.declared).toEqual([eastPung])
+    expect(allSets(reading!)).toHaveLength(3)
+  })
+
+  it('counts a declared kong as one set', () => {
+    const readings = completeDecompositions(hand('b123 b456 c789 dr dr'), [kong(wind('east'))])
+    expect(readings).toHaveLength(1)
+    expect(allSets(readings[0])).toHaveLength(4)
   })
 })

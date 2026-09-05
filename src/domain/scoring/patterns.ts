@@ -8,7 +8,8 @@
  * state this app does not have yet.
  */
 
-import type { Decomposition } from '../decompose'
+import { type Decomposition, allSets } from '../decompose'
+import type { WinSource } from '../hand'
 import { type Set3, isChow, isPungLike } from '../melds'
 import {
   type Dragon,
@@ -26,11 +27,15 @@ export type WinningHand =
   | { kind: 'special'; id: 'thirteen-orphans' }
 
 export interface ScoringContext {
-  /** The fourteen tiles of the hand, bonus tiles excluded. */
+  /** The fourteen tiles of the hand, bonus tiles excluded. Kongs' fourth copies included. */
   tiles: readonly StandardTile[]
   hand: WinningHand
   /** The player's own seat wind, if chosen. Undefined means no seat-wind bonus applies. */
   seatWind?: Wind
+  /** How the hand was won, if the player has said. Undefined means no situational faan applies. */
+  win?: WinSource
+  /** Nothing in the hand was claimed from a discard. */
+  concealed: boolean
 }
 
 export interface FaanPattern {
@@ -53,7 +58,7 @@ export interface FaanPattern {
 export const LIMIT_FAAN = 13
 
 function standardMelds(context: ScoringContext): Set3[] {
-  return context.hand.kind === 'standard' ? context.hand.decomposition.melds : []
+  return context.hand.kind === 'standard' ? allSets(context.hand.decomposition) : []
 }
 
 function suitsUsed(context: ScoringContext): Set<Suit> {
@@ -157,6 +162,22 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     faan: 1,
     matches: (context) =>
       context.seatWind !== undefined && windPungs(context).includes(context.seatWind),
+  },
+  {
+    id: 'self-draw',
+    name: 'Self-drawn',
+    chineseName: '自摸',
+    description: "The winning tile was drawn, not claimed from another player's discard.",
+    faan: 1,
+    matches: (context) => context.win === 'draw',
+  },
+  {
+    id: 'fully-concealed',
+    name: 'Fully concealed',
+    chineseName: '門前清',
+    description: 'No meld was claimed from a discard anywhere in the hand.',
+    faan: 1,
+    matches: (context) => context.win !== undefined && context.concealed,
   },
   {
     id: 'small-winds',

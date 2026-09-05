@@ -54,14 +54,19 @@ export function tileName(tile: Tile): string {
   }
 }
 
+/** "Exposed" or "Concealed", or nothing for a pair, which can never be claimed. */
+function exposure(exposed: boolean): string {
+  return exposed ? 'Exposed' : 'Concealed'
+}
+
 export function meldName(meld: Meld | PartialSet): string {
   switch (meld.type) {
     case 'chow':
-      return `Chow ${meld.start}-${meld.start + 1}-${meld.start + 2} of ${SUIT_NAMES[meld.suit]}`
+      return `${exposure(meld.exposed)} chow ${meld.start}-${meld.start + 1}-${meld.start + 2} of ${SUIT_NAMES[meld.suit]}`
     case 'pung':
-      return `Pung of ${tileName(meld.tile)}`
+      return `${exposure(meld.exposed)} pung of ${tileName(meld.tile)}`
     case 'kong':
-      return `Kong of ${tileName(meld.tile)}`
+      return `${exposure(meld.exposed)} kong of ${tileName(meld.tile)}`
     case 'pair':
       return `Pair of ${tileName(meld.tile)}`
     case 'partial-pung':

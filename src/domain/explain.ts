@@ -4,13 +4,13 @@
  */
 
 import { type Decomposition, bestDecomposition, decompose } from './decompose'
-import { type Meld, type PartialSet } from './melds'
+import { HAND_SIZE, type Hand, handSize as totalHandSize } from './hand'
+import { type Meld, type PartialSet, type Set3 } from './melds'
 import { tilesAway } from './shanten'
-import { HAND_SIZE } from './scoring'
-import { type StandardTile, type Tile, isBonus, isStandard } from './tiles'
+import { type StandardTile } from './tiles'
 
 export interface HandExplanation {
-  /** Standard tiles in hand, bonus tiles excluded. */
+  /** Tiles counted toward the fourteen: concealed tiles plus three per declared set. */
   handSize: number
   bonusCount: number
   setCount: number
@@ -18,6 +18,8 @@ export interface HandExplanation {
   partials: PartialSet[]
   /** Tiles that contribute to nothing in the best reading — spares to discard. */
   floaters: readonly StandardTile[]
+  /** Sets already on the table: claimed melds, and kongs declared face-down. */
+  declared: Set3[]
   /** How many more tiles the hand needs; 0 means it is already a winner. */
   tilesAway: number
   isWinning: boolean
@@ -27,6 +29,7 @@ export interface HandExplanation {
   distance: string
   /** Compact status for a one-line bar: "2 sets · 1 pair · 6 away" */
   brief: string
+  /** The concealed reading's sets and pair — what a player can still expose. */
   groups: Meld[]
   decomposition: Decomposition | null
 }
@@ -54,11 +57,16 @@ function count(n: number, singular: string, plural = `${singular}s`): string {
   return `${word} ${n === 1 ? singular : plural}`
 }
 
-function buildHeadline(decomposition: Decomposition | null, handSize: number): string {
+function buildHeadline(
+  decomposition: Decomposition | null,
+  declaredCount: number,
+  handSize: number,
+): string {
   if (handSize === 0) return 'Your hand is empty.'
   if (!decomposition) return 'Nothing to work with yet.'
 
   const parts: string[] = []
+  if (declaredCount > 0) parts.push(count(declaredCount, 'declared meld'))
   if (decomposition.melds.length > 0) {
     parts.push(count(decomposition.melds.length, 'complete set'))
   }
@@ -92,17 +100,21 @@ function buildDistance(away: number, handSize: number): string {
 }
 
 /** The same reading as {@link buildHeadline}, squeezed onto one line. */
-function buildBrief(decomposition: Decomposition | null, handSize: number, away: number): string {
+function buildBrief(
+  decomposition: Decomposition | null,
+  declaredCount: number,
+  handSize: number,
+  away: number,
+): string {
   if (handSize === 0) return 'No tiles yet'
   if (away === 0) return 'Winning hand'
 
   const parts: string[] = []
-  if (decomposition) {
-    if (decomposition.melds.length > 0) parts.push(plural(decomposition.melds.length, 'set'))
-    if (decomposition.pair) parts.push('1 pair')
-    if (decomposition.partials.length > 0) {
-      parts.push(plural(decomposition.partials.length, 'part-set'))
-    }
+  const setCount = declaredCount + (decomposition?.melds.length ?? 0)
+  if (setCount > 0) parts.push(plural(setCount, 'set'))
+  if (decomposition?.pair) parts.push('1 pair')
+  if (decomposition && decomposition.partials.length > 0) {
+    parts.push(plural(decomposition.partials.length, 'part-set'))
   }
   parts.push(`${away} away`)
 
@@ -113,24 +125,25 @@ function plural(n: number, singular: string): string {
   return `${n} ${n === 1 ? singular : `${singular}s`}`
 }
 
-export function explainHand(tiles: readonly Tile[]): HandExplanation {
-  const standard = tiles.filter(isStandard)
-  const bonusCount = tiles.filter(isBonus).length
-  const decomposition = bestDecomposition(decompose(standard))
-  const away = tilesAway(standard)
+export function explainHand(hand: Hand): HandExplanation {
+  const { concealed, melds: declared, bonus } = hand
+  const decomposition = bestDecomposition(decompose(concealed, declared))
+  const away = tilesAway(hand)
+  const size = totalHandSize(hand)
 
   return {
-    handSize: standard.length,
-    bonusCount,
-    setCount: decomposition?.melds.length ?? 0,
+    handSize: size,
+    bonusCount: bonus.length,
+    setCount: declared.length + (decomposition?.melds.length ?? 0),
     hasPair: decomposition?.pair != null,
     partials: decomposition?.partials ?? [],
     floaters: decomposition?.floaters ?? [],
+    declared,
     tilesAway: away,
-    isWinning: away === 0 && standard.length === HAND_SIZE,
-    headline: buildHeadline(decomposition, standard.length),
-    distance: buildDistance(away, standard.length),
-    brief: buildBrief(decomposition, standard.length, away),
+    isWinning: away === 0 && size === HAND_SIZE,
+    headline: buildHeadline(decomposition, declared.length, size),
+    distance: buildDistance(away, size),
+    brief: buildBrief(decomposition, declared.length, size, away),
     groups: decomposition
       ? [...decomposition.melds, ...(decomposition.pair ? [decomposition.pair] : [])]
       : [],

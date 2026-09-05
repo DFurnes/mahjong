@@ -7,7 +7,8 @@
  */
 
 import { completeDecompositions } from '../decompose'
-import { type StandardTile, type Tile, type Wind, isStandard } from '../tiles'
+import { HAND_SIZE, type Hand, handSize, handTiles, isConcealedHand } from '../hand'
+import { type Wind } from '../tiles'
 import { thirteenOrphansCost } from '../shanten'
 import {
   FAAN_PATTERNS,
@@ -17,8 +18,6 @@ import {
 } from './patterns'
 
 export * from './patterns'
-
-export const HAND_SIZE = 14
 
 export interface MatchedPattern {
   id: string
@@ -74,24 +73,29 @@ function scoreWinningHand(context: ScoringContext): HandScore {
  * Score a hand. Bonus tiles are set aside — under full rules each is worth a
  * faan, but that needs bonus tiles threaded into {@link ScoringContext}, which
  * does not happen yet, so they score nothing here. `seatWind` enables the
- * seat-wind pattern; the round wind is not modeled yet.
+ * seat-wind pattern; the round wind is not modeled yet. `hand.win` enables
+ * self-draw and fully-concealed; leaving it unset scores neither.
  */
-export function scoreHand(tiles: readonly Tile[], seatWind?: Wind): HandScore {
-  const standard = tiles.filter(isStandard) as StandardTile[]
-  if (standard.length !== HAND_SIZE) return NO_SCORE
+export function scoreHand(hand: Hand, seatWind?: Wind): HandScore {
+  if (handSize(hand) !== HAND_SIZE) return NO_SCORE
 
-  const candidates: WinningHand[] = completeDecompositions(standard).map((decomposition) => ({
-    kind: 'standard' as const,
-    decomposition,
-  }))
+  const declared = hand.melds
+  const candidates: WinningHand[] = completeDecompositions(hand.concealed, declared).map(
+    (decomposition) => ({ kind: 'standard' as const, decomposition }),
+  )
 
-  if (thirteenOrphansCost(standard) === 0) {
+  if (declared.length === 0 && thirteenOrphansCost(hand.concealed) === 0) {
     candidates.push({ kind: 'special', id: 'thirteen-orphans' })
   }
 
   if (candidates.length === 0) return NO_SCORE
 
+  const tiles = handTiles(hand)
+  const concealed = isConcealedHand(hand)
+
   return candidates
-    .map((hand) => scoreWinningHand({ tiles: standard, hand, seatWind }))
+    .map((winningHand) =>
+      scoreWinningHand({ tiles, hand: winningHand, seatWind, win: hand.win, concealed }),
+    )
     .reduce((best, score) => (score.faan > best.faan ? score : best))
 }

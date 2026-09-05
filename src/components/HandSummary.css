@@ -28,11 +28,12 @@
 .summary__group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.4rem 0.5rem;
+  gap: 0.35rem;
+  padding: 0.5rem 0.6rem;
 
   background: rgb(0 0 0 / 0.16);
-  border-radius: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 0.5rem;
 }
 
 .summary__group-tiles {
@@ -53,6 +54,34 @@
 .summary__group--floater {
   opacity: 0.6;
   border: 1px dotted rgb(255 255 255 / 0.2);
+}
+
+.summary__group-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.summary__group-action {
+  padding: 0.15rem 0.55rem;
+
+  font: inherit;
+  font-size: 0.65rem;
+  color: var(--fg);
+
+  background: rgb(255 255 255 / 0.14);
+  border: none;
+  border-radius: 999px;
+
+  cursor: pointer;
+}
+
+.summary__group-action:hover {
+  background: rgb(255 255 255 / 0.24);
+}
+
+.summary__group-action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .summary__seat-note {

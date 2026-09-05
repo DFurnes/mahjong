@@ -174,6 +174,65 @@ describe('explaining and scoring a hand', () => {
   })
 })
 
+describe('declaring melds', () => {
+  const WINNING = [
+    '1 of Bamboo',
+    '2 of Bamboo',
+    '3 of Bamboo',
+    '4 of Bamboo',
+    '5 of Bamboo',
+    '6 of Bamboo',
+    '7 of Bamboo',
+    '8 of Bamboo',
+    '9 of Bamboo',
+    '1 of Bamboo',
+    '2 of Bamboo',
+    '3 of Bamboo',
+    '5 of Bamboo',
+    '5 of Bamboo',
+  ]
+
+  it('exposes a set from the reading, and takes it back on tap', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of WINNING) await user.click(boardTile(name))
+
+    await user.click(screen.getAllByRole('button', { name: 'Expose' })[0])
+    expect(within(screen.getByTestId('meld-tiles')).getAllByRole('button')).toHaveLength(1)
+
+    await user.click(within(screen.getByTestId('meld-tiles')).getAllByRole('button')[0])
+    expect(within(screen.getByTestId('meld-tiles')).queryAllByRole('button')).toHaveLength(0)
+  })
+
+  it('promotes an exposed pung to a kong, drawing the fourth copy off the table', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (let i = 0; i < 3; i += 1) await user.click(boardTile('Red Dragon'))
+    expect(boardTile('Red Dragon')).toHaveAccessibleName('Red Dragon, 1 left')
+
+    await user.click(screen.getByRole('button', { name: 'Expose' }))
+    await user.click(screen.getByRole('button', { name: /Promote .* to a kong/ }))
+
+    const meldButton = within(screen.getByTestId('meld-tiles')).getAllByRole('button')[0]
+    expect(meldButton).toHaveAccessibleName(/Exposed kong of Red Dragon/)
+    expect(boardTile('Red Dragon')).toBeDisabled()
+  })
+
+  it('raises the faan for a self-drawn win', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of WINNING) await user.click(boardTile(name))
+    await user.click(screen.getByRole('button', { name: 'Self-drawn' }))
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+
+    // Full flush (7) + all sequences (1), plus self-drawn (1) and fully concealed (1).
+    expect(screen.getByText('10 faan')).toBeInTheDocument()
+  })
+})
+
 describe('collapsing the tray', () => {
   const toggle = () => screen.getByRole('button', { name: /Your hand/ })
 

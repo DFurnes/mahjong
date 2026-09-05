@@ -1,8 +1,7 @@
 .hand {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.5rem;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .hand__section {
@@ -29,6 +28,13 @@
   text-transform: none;
 }
 
+.hand__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0;
+}
+
 .hand__tiles {
   display: flex;
   flex-wrap: wrap;
@@ -36,15 +42,21 @@
   min-height: calc(var(--tile-base) * 1.36);
 }
 
-/* Fourteen tiles read better as two even rows than as an odd wrap. */
+/*
+ * Fourteen tiles read better as two even rows than as an odd wrap — but a
+ * declared meld shrinks how many concealed tiles are left to show, and the
+ * column count has to shrink with it. Fixing the count at 7 or 14 regardless
+ * of `--concealed-slots` reserves grid track for tiles that moved into a
+ * meld, leaving a dead stretch before the divider.
+ */
 .hand__tiles--main {
   display: grid;
-  grid-template-columns: repeat(7, var(--tile-base));
+  grid-template-columns: repeat(min(var(--concealed-slots, 14), 7), var(--tile-base));
 }
 
 @media (width >= 40rem) {
   .hand__tiles--main {
-    grid-template-columns: repeat(14, var(--tile-base));
+    grid-template-columns: repeat(min(var(--concealed-slots, 14), 14), var(--tile-base));
   }
 }
 
@@ -56,6 +68,7 @@
 
 /* Collapsed tray: one line of small tiles, hand then bonus. */
 .hand--compact {
+  flex-direction: row;
   gap: 0.4rem;
   align-items: center;
 }
@@ -67,6 +80,87 @@
 .hand__divider {
   align-self: stretch;
   width: 1px;
-  margin: 0.1rem 0.2rem;
+  margin: 0.1rem 0.7rem;
   background: rgb(255 255 255 / 0.18);
+}
+
+.hand__melds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each meld is its own card — tiles, then its type, stacked to stay narrow
+   so several can sit flush against each other. */
+.hand__meld {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.hand--compact .hand__meld {
+  flex-direction: row;
+  gap: 0.2rem;
+}
+
+.hand__meld-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hand__meld-tiles {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  /* The highlight padding would otherwise push the tiles down relative to
+     the hand's own tiles, which sit in the grid with no wrapping button. */
+  margin-top: -0.2rem;
+
+  background: rgb(255 255 255 / 0.08);
+  border: none;
+  border-radius: 0.4rem;
+
+  cursor: pointer;
+}
+
+.hand__meld-tiles:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.hand__meld-tiles:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Styled as an action, not a label — this sits right under a "Pung" type
+   label and needs to read as something to click, not a second, conflicting
+   status. */
+.hand__meld-kong {
+  padding: 0.1rem 0.5rem;
+
+  font: inherit;
+  font-size: 0.65rem;
+  color: var(--muted);
+
+  background: transparent;
+  border: 1px dashed rgb(255 255 255 / 0.35);
+  border-radius: 999px;
+
+  cursor: pointer;
+}
+
+.hand__meld-kong:hover {
+  color: var(--fg);
+  border-color: rgb(255 255 255 / 0.6);
+}
+
+.hand__meld-kong:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

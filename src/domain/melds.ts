@@ -14,15 +14,15 @@ import {
 } from './tiles'
 
 /** Three of a kind. */
-export type Pung = { type: 'pung'; tile: StandardTile }
-/** Three consecutive tiles in one suit, starting at `start`. */
-export type Chow = { type: 'chow'; suit: Suit; start: Rank }
-/** Four of a kind. Not produced yet — a concealed kong needs a 15-tile hand. */
-export type Kong = { type: 'kong'; tile: StandardTile }
-/** The hand's single pair (the "eyes"). */
+export type Pung = { type: 'pung'; tile: StandardTile; exposed: boolean }
+/** Three consecutive tiles in one suit, starting at `start`. A chow can only ever be claimed. */
+export type Chow = { type: 'chow'; suit: Suit; start: Rank; exposed: boolean }
+/** Four of a kind: three claimed and exposed, or declared face-down (a "concealed kong"). */
+export type Kong = { type: 'kong'; tile: StandardTile; exposed: boolean }
+/** The hand's single pair (the "eyes"). A pair can never be claimed, so it has no `exposed`. */
 export type Pair = { type: 'pair'; tile: StandardTile }
 
-/** A completed group of three (or four, once kongs exist). */
+/** A completed group of three (or four, for a kong). */
 export type Set3 = Pung | Chow | Kong
 export type Meld = Set3 | Pair
 
@@ -32,9 +32,22 @@ export type PartialPung = { type: 'partial-pung'; tile: StandardTile }
 export type PartialChow = { type: 'partial-chow'; suit: Suit; ranks: [Rank, Rank] }
 export type PartialSet = PartialPung | PartialChow
 
-export const pung = (tile: StandardTile): Pung => ({ type: 'pung', tile })
-export const chow = (suit: Suit, start: Rank): Chow => ({ type: 'chow', suit, start })
-export const kong = (tile: StandardTile): Kong => ({ type: 'kong', tile })
+export const pung = (tile: StandardTile, exposed = false): Pung => ({
+  type: 'pung',
+  tile,
+  exposed,
+})
+export const chow = (suit: Suit, start: Rank, exposed = false): Chow => ({
+  type: 'chow',
+  suit,
+  start,
+  exposed,
+})
+export const kong = (tile: StandardTile, exposed = false): Kong => ({
+  type: 'kong',
+  tile,
+  exposed,
+})
 export const pair = (tile: StandardTile): Pair => ({ type: 'pair', tile })
 
 export function isChow(meld: Meld): meld is Chow {
@@ -66,7 +79,12 @@ export function meldTiles(meld: Meld | PartialSet): Tile[] {
   }
 }
 
-/** A stable key, so decompositions that differ only in ordering can be deduplicated. */
+/**
+ * A stable key, so decompositions that differ only in ordering can be deduplicated.
+ * Deliberately ignores `exposed` — it dedupes readings of the concealed tiles, where
+ * every set is concealed by construction, so exposure is never part of a set's identity
+ * here.
+ */
 export function meldKey(meld: Meld | PartialSet): string {
   switch (meld.type) {
     case 'chow':

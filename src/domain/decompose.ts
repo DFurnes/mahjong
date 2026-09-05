@@ -17,6 +17,7 @@ import {
   pair,
   pung,
 } from './melds'
+import { HAND_SIZE } from './hand'
 import {
   STANDARD_TILES,
   type Rank,
@@ -28,7 +29,9 @@ import {
 } from './tiles'
 
 export interface Decomposition {
-  /** Completed sets of three. */
+  /** Sets already on the table: claimed melds, and kongs declared face-down. */
+  declared: Set3[]
+  /** Completed sets of three, read out of the concealed tiles. */
   melds: Set3[]
   /** The hand's pair, if the reading set one aside. */
   pair: Pair | null
@@ -38,6 +41,11 @@ export interface Decomposition {
   floaters: StandardTile[]
   /** Four sets and a pair, with nothing left over. */
   isComplete: boolean
+}
+
+/** The four sets of a hand — declared and read — in the order a finished hand shows them. */
+export function allSets(decomposition: Decomposition): Set3[] {
+  return [...decomposition.declared, ...decomposition.melds]
 }
 
 /** The 34 standard tiles as a fixed-index array: 0-8 bamboo, 9-17 characters, 18-26 dots, 27-30 winds, 31-33 dragons. */
@@ -277,15 +285,20 @@ function search(
   return reduced
 }
 
-function toDecomposition(sub: Partial, handSize: number): Decomposition {
+function toDecomposition(
+  sub: Partial,
+  declared: readonly Set3[],
+  concealedSize: number,
+): Decomposition {
   return {
+    declared: [...declared],
     melds: sub.melds,
     pair: sub.pair,
     partials: sub.partials,
     floaters: sub.floaters,
     isComplete:
-      handSize === 14 &&
-      sub.melds.length === 4 &&
+      concealedSize + declared.length * 3 === HAND_SIZE &&
+      declared.length + sub.melds.length === 4 &&
       sub.pair !== null &&
       sub.partials.length === 0 &&
       sub.floaters.length === 0,
@@ -295,24 +308,31 @@ function toDecomposition(sub: Partial, handSize: number): Decomposition {
 /**
  * The best readings of a hand — most sets, then most part-sets — with one
  * representative per distinct shape. Bonus tiles are ignored; they sit outside
- * the hand proper and never form sets.
+ * the hand proper and never form sets. `declared` is melds already on the
+ * table — they are not searched for, just carried along on every reading.
  */
-export function decompose(tiles: readonly Tile[]): Decomposition[] {
+export function decompose(tiles: readonly Tile[], declared: readonly Set3[] = []): Decomposition[] {
   const standard = tiles.filter(isStandard)
   const results = search(toCounts(standard), false, 'best', new Map())
-  return keepRepresentatives(prune(results)).map((sub) => toDecomposition(sub, standard.length))
+  return keepRepresentatives(prune(results)).map((sub) =>
+    toDecomposition(sub, declared, standard.length),
+  )
 }
 
 /**
  * Every reading that is a complete winning shape: four sets and a pair, with
- * nothing left over. Empty for a hand that cannot win as it stands.
+ * nothing left over. Empty for a hand that cannot win as it stands. `declared`
+ * is melds already on the table, each filling one of the four set slots.
  */
-export function completeDecompositions(tiles: readonly Tile[]): Decomposition[] {
+export function completeDecompositions(
+  tiles: readonly Tile[],
+  declared: readonly Set3[] = [],
+): Decomposition[] {
   const standard = tiles.filter(isStandard)
-  if (standard.length !== 14) return []
+  if (declared.length > 4 || standard.length !== HAND_SIZE - declared.length * 3) return []
   const results = search(toCounts(standard), false, 'complete', new Map())
   return results
-    .map((sub) => toDecomposition(sub, standard.length))
+    .map((sub) => toDecomposition(sub, declared, standard.length))
     .filter((decomposition) => decomposition.isComplete)
 }
 
