@@ -9,7 +9,7 @@
  * kongs at all.
  */
 
-import { type BonusTile, type StandardTile, type Tile, isStandard } from './tiles'
+import { type BonusTile, type StandardTile, type Tile, isStandard } from '../tiles/tiles'
 import { type Set3, meldTiles } from './melds'
 
 /** How the winning tile arrived. Undefined (on {@link Hand.win}) means the player hasn't said. */

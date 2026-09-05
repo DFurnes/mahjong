@@ -1,4 +1,4 @@
-import { type Tile as TileModel, tileName } from '../domain'
+import { type Tile as TileModel, tileName } from '../engine/tiles'
 import { tileArt } from './tileArt'
 import './Tile.css'
 

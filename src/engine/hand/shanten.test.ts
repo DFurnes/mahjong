@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { concealedHand } from './hand'
+import { concealedHand } from './types'
 import { pung } from './melds'
 import { shanten, thirteenOrphansCost, tilesAway } from './shanten'
-import { hand } from './testHands'
-import { wind } from './tiles'
+import { hand } from '../testing/testHands'
+import { wind } from '../tiles/tiles'
 
 const away = (notation: string) => tilesAway(concealedHand(hand(notation)))
 

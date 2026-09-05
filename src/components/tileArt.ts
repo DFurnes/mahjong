@@ -6,7 +6,7 @@
  * Artwork: https://github.com/samoheen/mahjong-tiles (public domain).
  */
 
-import { tileId, type Tile } from '../domain'
+import { tileId, type Tile } from '../engine/tiles'
 
 const ART_MODULES = import.meta.glob('../assets/tiles/*.svg', {
   eager: true,

@@ -11,7 +11,8 @@ import {
   type Tile,
   suited,
   tileId,
-} from './tiles'
+} from '../tiles/tiles'
+import { suitName, tileName } from '../tiles/display'
 
 /** Three of a kind. */
 export type Pung = { type: 'pung'; tile: StandardTile; exposed: boolean }
@@ -94,4 +95,26 @@ export function meldKey(meld: Meld | PartialSet): string {
     default:
       return `${meld.type}:${tileId(meld.tile)}`
   }
+}
+
+/** Human-readable name for a complete or partial meld. */
+export function meldName(meld: Meld | PartialSet): string {
+  switch (meld.type) {
+    case 'chow':
+      return `${exposure(meld.exposed)} chow ${meld.start}-${meld.start + 1}-${meld.start + 2} of ${suitName(meld.suit)}`
+    case 'pung':
+      return `${exposure(meld.exposed)} pung of ${tileName(meld.tile)}`
+    case 'kong':
+      return `${exposure(meld.exposed)} kong of ${tileName(meld.tile)}`
+    case 'pair':
+      return `Pair of ${tileName(meld.tile)}`
+    case 'partial-pung':
+      return `${tileName(meld.tile)} pair, needs a third`
+    case 'partial-chow':
+      return `${meld.ranks.join('-')} of ${suitName(meld.suit)}, needs one more`
+  }
+}
+
+function exposure(exposed: boolean): string {
+  return exposed ? 'Exposed' : 'Concealed'
 }

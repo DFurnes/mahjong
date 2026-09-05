@@ -1,4 +1,4 @@
-import { WINDS, type Wind, windGlyph, windName } from '../domain'
+import { WINDS, type Wind, windGlyph, windName } from '../engine/tiles'
 import { ChoiceButton, ChoiceGroup } from './ChoiceGroup'
 import './WindPicker.css'
 

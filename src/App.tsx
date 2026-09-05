@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { type ScoringOptions, explainHand } from './domain'
+import { explainHand } from './engine/hand'
+import type { ScoringOptions } from './engine/scoring'
 import { Hand } from './components/Hand'
 import { HandSummary } from './components/HandSummary'
 import { Table } from './components/Table'

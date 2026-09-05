@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   type BonusTile,
-  type Set3,
   type StandardTile,
   type Tile as TileModel,
+  tileId,
+} from '../engine/tiles'
+import {
+  type Set3,
   HAND_SIZE,
   meldKey,
   meldName,
   meldTiles,
-  tileId,
-} from '../domain'
+} from '../engine/hand'
 import type { Area } from '../state/useMahjongTable'
 import { Tile, TileSlot } from './Tile'
 import { tileArt } from './tileArt'

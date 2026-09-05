@@ -1,4 +1,4 @@
-import type { WinCircumstance, WinSource } from '../domain'
+import type { WinCircumstance, WinSource } from '../engine/hand'
 import { ChoiceButton, ChoiceGroup } from './ChoiceGroup'
 import './WinPicker.css'
 

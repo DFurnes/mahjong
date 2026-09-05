@@ -11,7 +11,7 @@ import {
   dragon,
   suited,
   wind,
-} from './tiles'
+} from '../tiles/tiles'
 
 const SUIT_BY_LETTER: Record<string, Suit> = { b: 'bamboo', c: 'character', d: 'dot' }
 const WIND_BY_LETTER: Record<string, Wind> = { e: 'east', s: 'south', w: 'west', n: 'north' }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { HAND_SIZE, bonus, dragon, kong, pung, suited, tileId, wind } from '../domain'
-import { hand } from '../domain/testHands'
+import { bonus, dragon, suited, tileId, wind } from '../engine/tiles'
+import { HAND_SIZE, kong, pung } from '../engine/hand'
+import { hand } from '../engine/testing/testHands'
 import {
   type TableState,
   initialTableState,

@@ -7,27 +7,29 @@
 import { useMemo, useReducer } from 'react'
 import {
   type BonusTile,
-  type Hand,
-  type Set3,
   type StandardTile,
   type Tile,
   type TileCounts,
   type TileId,
+  ALL_TILES,
+  copiesOf,
+  isBonus,
+  sortTiles,
+  tileId,
+} from '../engine/tiles'
+import {
+  type Hand,
+  type Set3,
   type WinCircumstance,
   type WinSource,
-  ALL_TILES,
   EMPTY_HAND,
   HAND_SIZE,
-  copiesOf,
   handSize,
   handTiles,
-  isBonus,
   isFullHand,
   kong,
   meldTiles,
-  sortTiles,
-  tileId,
-} from '../domain'
+} from '../engine/hand'
 
 /** Where a selected tile lives: still hidden in the hand, or the bonus tray beside it. */
 export type Area = 'concealed' | 'bonus'

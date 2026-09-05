@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { concealedHand, type Hand } from '../hand'
-import { kong, pung } from '../melds'
-import { hand } from '../testHands'
-import { bonus, dragon, suited, wind } from '../tiles'
+import { concealedHand, type Hand } from '../hand/types'
+import { kong, pung } from '../hand/melds'
+import { hand } from '../testing/testHands'
+import { bonus, dragon, suited, wind } from '../tiles/tiles'
 import { LIMIT_FAAN, type ScoringOptions, scoreHand } from './index'
 
 const idsOf = (notation: string, options?: ScoringOptions) =>

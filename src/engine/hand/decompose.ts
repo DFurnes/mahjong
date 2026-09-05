@@ -17,7 +17,7 @@ import {
   pair,
   pung,
 } from './melds'
-import { HAND_SIZE } from './hand'
+import { HAND_SIZE } from './types'
 import {
   STANDARD_TILES,
   type Rank,
@@ -26,7 +26,7 @@ import {
   type Tile,
   isStandard,
   tileId,
-} from './tiles'
+} from '../tiles/tiles'
 
 export interface Decomposition {
   /** Sets already on the table: claimed melds, and kongs declared face-down. */

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { explainHand } from './explain'
-import { concealedHand } from './hand'
+import { concealedHand } from './types'
 import { pung } from './melds'
-import { hand } from './testHands'
-import { bonus, wind } from './tiles'
+import { hand } from '../testing/testHands'
+import { bonus, wind } from '../tiles/tiles'
 
 const explain = (notation: string) => explainHand(concealedHand(hand(notation)))
 

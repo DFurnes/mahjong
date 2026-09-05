@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { allSets, bestDecomposition, completeDecompositions, decompose } from './decompose'
 import { kong, meldKey, pung } from './melds'
-import { hand } from './testHands'
-import { bonus, wind } from './tiles'
+import { hand } from '../testing/testHands'
+import { bonus, wind } from '../tiles/tiles'
 
 const keysOf = (melds: readonly { type: string }[]) => melds.map((m) => meldKey(m as never)).sort()
 

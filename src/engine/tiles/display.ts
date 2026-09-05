@@ -1,6 +1,5 @@
-/** Human-readable names for tiles and melds, used in prose and accessible labels. */
+/** Human-readable names and glyphs for tiles, used in prose and accessible labels. */
 
-import { type Meld, type PartialSet } from './melds'
 import type { Suit, Tile, Wind, Dragon, BonusKind } from './tiles'
 
 const SUIT_NAMES: Record<Suit, string> = {
@@ -51,27 +50,5 @@ export function tileName(tile: Tile): string {
       return DRAGON_NAMES[tile.dragon]
     case 'bonus':
       return BONUS_NAMES[tile.bonus][tile.index - 1]
-  }
-}
-
-/** "Exposed" or "Concealed", or nothing for a pair, which can never be claimed. */
-function exposure(exposed: boolean): string {
-  return exposed ? 'Exposed' : 'Concealed'
-}
-
-export function meldName(meld: Meld | PartialSet): string {
-  switch (meld.type) {
-    case 'chow':
-      return `${exposure(meld.exposed)} chow ${meld.start}-${meld.start + 1}-${meld.start + 2} of ${SUIT_NAMES[meld.suit]}`
-    case 'pung':
-      return `${exposure(meld.exposed)} pung of ${tileName(meld.tile)}`
-    case 'kong':
-      return `${exposure(meld.exposed)} kong of ${tileName(meld.tile)}`
-    case 'pair':
-      return `Pair of ${tileName(meld.tile)}`
-    case 'partial-pung':
-      return `${tileName(meld.tile)} pair, needs a third`
-    case 'partial-chow':
-      return `${meld.ranks.join('-')} of ${SUIT_NAMES[meld.suit]}, needs one more`
   }
 }

@@ -1,25 +1,29 @@
 import { useMemo } from 'react'
 import {
   type Hand,
-  type HandScore,
   type Meld,
   type PartialSet,
-  type ScoringOptions,
   type Set3,
-  type StandardTile,
   type WinCircumstance,
   type WinSource,
-  LIMIT_FAAN,
   explainHand,
   kong,
   meldKey,
   meldName,
   meldTiles,
-  scoreHand,
+} from '../engine/hand'
+import {
+  type StandardTile,
   tileId,
   tileName,
   windName,
-} from '../domain'
+} from '../engine/tiles'
+import {
+  type HandScore,
+  type ScoringOptions,
+  LIMIT_FAAN,
+  scoreHand,
+} from '../engine/scoring'
 import { Tile } from './Tile'
 import { WinPicker } from './WinPicker'
 import './HandSummary.css'

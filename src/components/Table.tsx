@@ -12,7 +12,7 @@ import {
   suited,
   tileId,
   wind,
-} from '../domain'
+} from '../engine/tiles'
 import { Tile } from './Tile'
 import './Table.css'
 

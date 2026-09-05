@@ -4,10 +4,10 @@
  */
 
 import { type Decomposition, bestDecomposition, decompose } from './decompose'
-import { HAND_SIZE, type Hand, handSize as totalHandSize } from './hand'
+import { HAND_SIZE, type Hand, handSize as totalHandSize } from './types'
 import { type Meld, type PartialSet, type Set3 } from './melds'
 import { tilesAway } from './shanten'
-import { type StandardTile } from './tiles'
+import { type StandardTile } from '../tiles/tiles'
 
 export interface HandExplanation {
   /** Tiles counted toward the fourteen: concealed tiles plus three per declared set. */

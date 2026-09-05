@@ -8,9 +8,9 @@
  * tracking which tile completed the hand, which this app does not do.
  */
 
-import { type Decomposition, allSets } from '../decompose'
-import type { WinCircumstance, WinSource } from '../hand'
-import { type Set3, isChow, isPungLike } from '../melds'
+import { type Decomposition, allSets } from '../hand/decompose'
+import type { WinCircumstance, WinSource } from '../hand/types'
+import { type Set3, isChow, isPungLike } from '../hand/melds'
 import {
   type BonusIndex,
   type BonusKind,
@@ -24,7 +24,8 @@ import {
   isSuited,
   isTerminal,
   isTerminalOrHonour,
-} from '../tiles'
+} from '../tiles/tiles'
+import { LIMIT_FAAN } from './rules'
 
 /** How a hand qualified as a win. */
 export type WinningHand =
@@ -68,8 +69,6 @@ export interface FaanPattern {
 }
 
 /** Hong Kong scoring is capped; a hand worth more than this pays this. */
-export const LIMIT_FAAN = 13
-
 function standardMelds(context: ScoringContext): Set3[] {
   return context.hand.kind === 'standard' ? allSets(context.hand.decomposition) : []
 }

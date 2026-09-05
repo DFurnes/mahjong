@@ -9,8 +9,8 @@
  */
 
 import { type Decomposition, decompose } from './decompose'
-import { HAND_SIZE, type Hand } from './hand'
-import { type Tile, isStandard, isTerminalOrHonour, tileId } from './tiles'
+import { HAND_SIZE, type Hand } from './types'
+import { type Tile, isStandard, isTerminalOrHonour, tileId } from '../tiles/tiles'
 
 const SETS_PER_HAND = 4
 

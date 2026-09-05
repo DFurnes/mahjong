@@ -6,18 +6,16 @@
  * — the player gets the most generous honest reading of their tiles.
  */
 
-import { completeDecompositions } from '../decompose'
-import { HAND_SIZE, type Hand, handSize, handTiles, isConcealedHand } from '../hand'
-import { type Wind } from '../tiles'
-import { thirteenOrphansCost } from '../shanten'
+import { completeDecompositions } from '../hand/decompose'
+import { HAND_SIZE, type Hand, handSize, handTiles, isConcealedHand } from '../hand/types'
+import { type Wind } from '../tiles/tiles'
+import { thirteenOrphansCost } from '../hand/shanten'
 import {
   FAAN_PATTERNS,
-  LIMIT_FAAN,
   type ScoringContext,
   type WinningHand,
 } from './patterns'
-
-export * from './patterns'
+import { LIMIT_FAAN } from './rules'
 
 export interface MatchedPattern {
   id: string
