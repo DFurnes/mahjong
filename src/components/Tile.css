@@ -1,0 +1,118 @@
+.tile {
+  --tile-width: var(--tile-base);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05em;
+
+  width: var(--tile-width);
+  height: calc(var(--tile-width) * 1.36);
+  padding: 0;
+
+  font-family: var(--font-tile);
+  line-height: 1;
+  color: var(--tile-ink);
+
+  background: linear-gradient(170deg, var(--tile-face) 0%, var(--tile-face-shade) 100%);
+  border: 1px solid var(--tile-edge);
+  border-bottom-width: 3px;
+  border-radius: 0.35rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+
+  cursor: pointer;
+  transition:
+    transform 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgb(0 0 0 / 0.3);
+}
+
+.tile:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tile:disabled {
+  cursor: default;
+  opacity: 0.32;
+}
+
+.tile--static {
+  cursor: default;
+}
+
+/* A tile shown for reference is not interactive, but it is not unavailable either. */
+.tile.tile--static:disabled {
+  opacity: 1;
+}
+
+.tile--large {
+  --tile-width: calc(var(--tile-base) * 1.2);
+}
+
+.tile--small {
+  --tile-width: calc(var(--tile-base) * 0.78);
+}
+
+.tile__glyph {
+  font-size: calc(var(--tile-width) * 0.52);
+  font-weight: 600;
+}
+
+.tile__mark {
+  font-size: calc(var(--tile-width) * 0.3);
+  opacity: 0.85;
+}
+
+.tile--green {
+  --tile-ink: var(--ink-green);
+}
+.tile--red {
+  --tile-ink: var(--ink-red);
+}
+.tile--blue {
+  --tile-ink: var(--ink-blue);
+}
+.tile--ink {
+  --tile-ink: var(--ink-black);
+}
+
+.tile__remaining {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+
+  min-width: 1.05rem;
+  padding: 0 0.2rem;
+
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--badge-ink);
+  text-align: center;
+
+  background: var(--badge-bg);
+  border-radius: 999px;
+}
+
+.tile__slot {
+  --tile-width: var(--tile-base);
+
+  width: var(--tile-width);
+  height: calc(var(--tile-width) * 1.36);
+
+  background: rgb(0 0 0 / 0.12);
+  border: 1px dashed rgb(255 255 255 / 0.25);
+  border-radius: 0.35rem;
+}

@@ -1,0 +1,55 @@
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-start;
+}
+
+.hand__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hand__label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hand__count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hand__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-height: calc(var(--tile-base) * 1.36);
+}
+
+/* Fourteen tiles read better as two even rows than as an odd wrap. */
+.hand__tiles--main {
+  display: grid;
+  grid-template-columns: repeat(7, var(--tile-base));
+}
+
+@media (width >= 40rem) {
+  .hand__tiles--main {
+    grid-template-columns: repeat(14, var(--tile-base));
+  }
+}
+
+.hand__empty {
+  align-self: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

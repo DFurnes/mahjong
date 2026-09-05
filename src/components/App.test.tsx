@@ -1,0 +1,175 @@
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
+import App from '../App'
+
+/** The board button for a tile, identified by its accessible name. */
+function boardTile(name: string) {
+  return screen.getByRole('button', { name: new RegExp(`^${name}, \\d+ left$`) })
+}
+
+function handTiles() {
+  return within(screen.getByTestId('hand-tiles')).queryAllByRole('button')
+}
+
+function bonusTiles() {
+  return within(screen.getByTestId('bonus-tiles')).queryAllByRole('button')
+}
+
+describe('building a hand', () => {
+  it('moves a tapped tile from the table into the hand', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(handTiles()).toHaveLength(0)
+    await user.click(boardTile('1 of Bamboo'))
+
+    expect(handTiles()).toHaveLength(1)
+    expect(handTiles()[0]).toHaveAccessibleName('1 of Bamboo')
+    expect(boardTile('1 of Bamboo')).toHaveAccessibleName('1 of Bamboo, 3 left')
+  })
+
+  it('puts a tile back on the table when tapped in hand', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(boardTile('East Wind'))
+    expect(handTiles()).toHaveLength(1)
+
+    await user.click(handTiles()[0])
+
+    expect(handTiles()).toHaveLength(0)
+    expect(boardTile('East Wind')).toHaveAccessibleName('East Wind, 4 left')
+  })
+
+  it('disables a tile once all four copies are taken', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (let i = 0; i < 4; i += 1) await user.click(boardTile('Red Dragon'))
+
+    expect(boardTile('Red Dragon')).toBeDisabled()
+    expect(handTiles()).toHaveLength(4)
+  })
+
+  it('keeps flowers and seasons out of the hand', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(boardTile('Spring'))
+
+    expect(handTiles()).toHaveLength(0)
+    expect(bonusTiles()).toHaveLength(1)
+    expect(boardTile('Spring')).toBeDisabled()
+  })
+
+  it('clears the hand and the tray', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(boardTile('1 of Bamboo'))
+    await user.click(boardTile('Spring'))
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
+
+    expect(handTiles()).toHaveLength(0)
+    expect(bonusTiles()).toHaveLength(0)
+  })
+})
+
+describe('explaining and scoring a hand', () => {
+  const WINNING = [
+    '1 of Bamboo',
+    '2 of Bamboo',
+    '3 of Bamboo',
+    '4 of Bamboo',
+    '5 of Bamboo',
+    '6 of Bamboo',
+    '7 of Bamboo',
+    '8 of Bamboo',
+    '9 of Bamboo',
+    '1 of Bamboo',
+    '2 of Bamboo',
+    '3 of Bamboo',
+    '5 of Bamboo',
+    '5 of Bamboo',
+  ]
+
+  it('describes the hand as it is built', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByText('Your hand is empty.')).toBeInTheDocument()
+
+    for (const name of ['1 of Bamboo', '2 of Bamboo', '3 of Bamboo']) {
+      await user.click(boardTile(name))
+    }
+
+    expect(screen.getByText('You have one complete set.')).toBeInTheDocument()
+    expect(
+      screen.getByText('You still need eleven tiles, and everything you hold fits.'),
+    ).toBeInTheDocument()
+  })
+
+  it('only offers scoring once the hand is full', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('button', { name: 'Score hand' })).toBeDisabled()
+
+    for (const name of WINNING) await user.click(boardTile(name))
+
+    expect(screen.getByRole('button', { name: 'Score hand' })).toBeEnabled()
+    expect(screen.getByText('This is a winning hand.')).toBeInTheDocument()
+  })
+
+  it('scores a full flush', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of WINNING) await user.click(boardTile(name))
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+
+    expect(screen.getByText('8 faan')).toBeInTheDocument()
+    expect(screen.getByText(/Full flush/)).toBeInTheDocument()
+    expect(screen.getByText(/All sequences/)).toBeInTheDocument()
+  })
+
+  it('says so when fourteen tiles do not make a hand', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const junk = [
+      '1 of Bamboo',
+      '3 of Bamboo',
+      '5 of Bamboo',
+      '7 of Bamboo',
+      '9 of Bamboo',
+      '2 of Characters',
+      '4 of Characters',
+      '6 of Characters',
+      '8 of Characters',
+      '1 of Dots',
+      '3 of Dots',
+      '5 of Dots',
+      '7 of Dots',
+      '9 of Dots',
+    ]
+    for (const name of junk) await user.click(boardTile(name))
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+
+    expect(screen.getByText(/do not make four sets and a pair/)).toBeInTheDocument()
+  })
+
+  it('drops a stale score when the hand changes', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    for (const name of WINNING) await user.click(boardTile(name))
+    await user.click(screen.getByRole('button', { name: 'Score hand' }))
+    expect(screen.getByText('8 faan')).toBeInTheDocument()
+
+    await user.click(handTiles()[0])
+
+    expect(screen.queryByText('8 faan')).not.toBeInTheDocument()
+  })
+})
