@@ -11,7 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-pnpm-lock.yaml
 
 # Playwright, used for local visual iteration — not part of the test suite.
 .playwright-browsers

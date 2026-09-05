@@ -2,6 +2,7 @@
   "name": "mahjong",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@11.24.0",
   "type": "module",
   "scripts": {
     "serve": "vite --port 3000 --host",
