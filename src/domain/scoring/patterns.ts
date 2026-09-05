@@ -29,6 +29,8 @@ export interface ScoringContext {
   /** The fourteen tiles of the hand, bonus tiles excluded. */
   tiles: readonly StandardTile[]
   hand: WinningHand
+  /** The player's own seat wind, if chosen. Undefined means no seat-wind bonus applies. */
+  seatWind?: Wind
 }
 
 export interface FaanPattern {
@@ -146,6 +148,15 @@ export const FAAN_PATTERNS: readonly FaanPattern[] = [
     faan: 8,
     supersedes: ['small-dragons'],
     matches: (context) => dragonPungs(context).length === 3,
+  },
+  {
+    id: 'seat-wind',
+    name: 'Seat wind',
+    chineseName: '門風',
+    description: 'A triplet of the wind matching the seat you chose.',
+    faan: 1,
+    matches: (context) =>
+      context.seatWind !== undefined && windPungs(context).includes(context.seatWind),
   },
   {
     id: 'small-winds',

@@ -55,6 +55,12 @@
   border: 1px dotted rgb(255 255 255 / 0.2);
 }
 
+.summary__seat-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .summary__actions {
   display: flex;
   gap: 0.6rem;

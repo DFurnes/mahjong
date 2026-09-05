@@ -75,7 +75,9 @@ at the 13-faan limit, except where one `supersedes` a weaker pattern it implies.
 ## Not modelled yet
 
 Exposed melds, kongs, and the distinction between the winning tile and the rest
-of the hand; situational faan (self-draw, last tile, seat and prevailing wind);
-and faan for flowers and seasons, which needs a seat wind to decide which ones
-count. The seams for all of these are already in the model — `Meld['kong']`, the
+of the hand; situational faan (self-draw, last tile); the round/prevailing
+wind (圈風) — only the seat wind (門風) is modelled so far, so a "double wind"
+pung only scores once; and faan for flowers and seasons, which needs bonus
+tiles threaded into `ScoringContext` (they are currently set aside entirely).
+The seams for all of these are already in the model — `Meld['kong']`, the
 `WinningHand` union and `ScoringContext`.

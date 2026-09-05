@@ -7,7 +7,7 @@
  */
 
 import { completeDecompositions } from '../decompose'
-import { type StandardTile, type Tile, isStandard } from '../tiles'
+import { type StandardTile, type Tile, type Wind, isStandard } from '../tiles'
 import { thirteenOrphansCost } from '../shanten'
 import {
   FAAN_PATTERNS,
@@ -72,10 +72,11 @@ function scoreWinningHand(context: ScoringContext): HandScore {
 
 /**
  * Score a hand. Bonus tiles are set aside — under full rules each is worth a
- * faan, but that needs seat winds to decide which ones count, so they score
- * nothing here.
+ * faan, but that needs bonus tiles threaded into {@link ScoringContext}, which
+ * does not happen yet, so they score nothing here. `seatWind` enables the
+ * seat-wind pattern; the round wind is not modeled yet.
  */
-export function scoreHand(tiles: readonly Tile[]): HandScore {
+export function scoreHand(tiles: readonly Tile[], seatWind?: Wind): HandScore {
   const standard = tiles.filter(isStandard) as StandardTile[]
   if (standard.length !== HAND_SIZE) return NO_SCORE
 
@@ -91,6 +92,6 @@ export function scoreHand(tiles: readonly Tile[]): HandScore {
   if (candidates.length === 0) return NO_SCORE
 
   return candidates
-    .map((hand) => scoreWinningHand({ tiles: standard, hand }))
+    .map((hand) => scoreWinningHand({ tiles: standard, hand, seatWind }))
     .reduce((best, score) => (score.faan > best.faan ? score : best))
 }

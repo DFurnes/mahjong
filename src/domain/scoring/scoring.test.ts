@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { hand } from '../testHands'
-import { bonus } from '../tiles'
+import { bonus, type Wind } from '../tiles'
 import { LIMIT_FAAN, scoreHand } from './index'
 
-const idsOf = (notation: string) => scoreHand(hand(notation)).patterns.map((p) => p.id)
-const faanOf = (notation: string) => scoreHand(hand(notation)).faan
+const idsOf = (notation: string, seatWind?: Wind) =>
+  scoreHand(hand(notation), seatWind).patterns.map((p) => p.id)
+const faanOf = (notation: string, seatWind?: Wind) => scoreHand(hand(notation), seatWind).faan
 
 describe('hands that cannot be scored', () => {
   it('rejects a hand that is not fourteen tiles', () => {
@@ -85,6 +86,24 @@ describe('faan patterns', () => {
     const patterns = idsOf('b111 b999 c111 c999 d11')
     expect(patterns).toContain('all-terminals')
     expect(patterns).not.toContain('all-pungs')
+  })
+
+  it('scores a seat wind pung when it matches the chosen seat', () => {
+    expect(idsOf('we we we b123 b456 c789 dr dr', 'east')).toContain('seat-wind')
+    expect(faanOf('we we we b123 b456 c789 dr dr', 'east')).toBe(1)
+  })
+
+  it('does not score a wind pung against a seat it does not match', () => {
+    expect(idsOf('we we we b123 b456 c789 dr dr', 'south')).not.toContain('seat-wind')
+    expect(idsOf('we we we b123 b456 c789 dr dr')).not.toContain('seat-wind')
+  })
+
+  it('stacks the seat wind faan with other patterns, up to the limit', () => {
+    // Half flush (bamboo plus honours) plus a matching seat wind pung: 3 + 1.
+    const ids = idsOf('we we we dr dr dr b789 b456 b11', 'east')
+    expect(ids).toContain('half-flush')
+    expect(ids).toContain('seat-wind')
+    expect(faanOf('we we we dr dr dr b789 b456 b11', 'east')).toBe(4)
   })
 
   it('scores thirteen orphans', () => {

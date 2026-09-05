@@ -5,6 +5,7 @@ import {
   type PartialSet,
   type StandardTile,
   type Tile as TileModel,
+  type Wind,
   HAND_SIZE,
   LIMIT_FAAN,
   explainHand,
@@ -14,6 +15,7 @@ import {
   scoreHand,
   tileId,
   tileName,
+  windName,
 } from '../domain'
 import { Tile } from './Tile'
 import './HandSummary.css'
@@ -22,6 +24,8 @@ export interface HandSummaryProps {
   /** The hand's scoring tiles, in order. Bonus tiles are counted but not scored. */
   tiles: readonly TileModel[]
   bonusCount: number
+  /** The player's own seat, if chosen. Unlocks the seat-wind faan. */
+  seatWind: Wind | null
   onClear: () => void
 }
 
@@ -106,15 +110,18 @@ function ScorePanel({ score }: { score: HandScore }) {
  * Reads the hand back to the player: what it holds now, how far it has to go,
  * and — once there are fourteen tiles — what it scores.
  */
-export function HandSummary({ tiles, bonusCount, onClear }: HandSummaryProps) {
+export function HandSummary({ tiles, bonusCount, seatWind, onClear }: HandSummaryProps) {
   const explanation = useMemo(() => explainHand(tiles), [tiles])
   const isFull = explanation.handSize === HAND_SIZE
-  // A score is a snapshot of fourteen particular tiles, so it is kept with the
-  // tiles it was taken from and ignored once the hand moves on.
-  const [scored, setScored] = useState<{ tiles: readonly TileModel[]; score: HandScore } | null>(
-    null,
-  )
-  const score = scored?.tiles === tiles ? scored.score : null
+  // A score is a snapshot of fourteen particular tiles and a seat wind, so it
+  // is kept with the inputs it was taken from and ignored once either moves on.
+  const [scored, setScored] = useState<{
+    tiles: readonly TileModel[]
+    seatWind: Wind | null
+    score: HandScore
+  } | null>(null)
+  const score =
+    scored?.tiles === tiles && scored.seatWind === seatWind ? scored.score : null
 
   return (
     <div className="summary">
@@ -125,12 +132,14 @@ export function HandSummary({ tiles, bonusCount, onClear }: HandSummaryProps) {
       <GroupList groups={explanation.partials} partial />
       <FloaterList tiles={explanation.floaters} />
 
+      {seatWind && <p className="summary__seat-note">Scoring as {windName(seatWind)} seat.</p>}
+
       <div className="summary__actions">
         <button
           type="button"
           className="summary__button"
           disabled={!isFull}
-          onClick={() => setScored({ tiles, score: scoreHand(tiles) })}
+          onClick={() => setScored({ tiles, seatWind, score: scoreHand(tiles, seatWind ?? undefined) })}
         >
           Score hand
         </button>

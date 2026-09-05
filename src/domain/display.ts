@@ -31,6 +31,16 @@ export function suitName(suit: Suit): string {
   return SUIT_NAMES[suit]
 }
 
+export function windName(wind: Wind): string {
+  return WIND_NAMES[wind]
+}
+
+const WIND_HANZI: Record<Wind, string> = { east: '東', south: '南', west: '西', north: '北' }
+
+export function windGlyph(wind: Wind): string {
+  return WIND_HANZI[wind]
+}
+
 export function tileName(tile: Tile): string {
   switch (tile.kind) {
     case 'suit':
