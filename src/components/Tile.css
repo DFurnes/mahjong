@@ -6,6 +6,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   gap: 0.05em;
 
   width: var(--tile-width);
@@ -81,6 +82,7 @@
 .tile__slot {
   --tile-width: var(--tile-base);
 
+  flex-shrink: 0;
   width: var(--tile-width);
   height: calc(var(--tile-width) * 1.36);
 

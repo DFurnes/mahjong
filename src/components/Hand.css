@@ -52,28 +52,42 @@
   font-size: 0.7rem;
 }
 
-/* Collapsed tray: one line of small tiles, hand then bonus. */
+/* Collapsed tray: one line of small tiles, hand then bonus. Groups never wrap
+   onto their own line — on a narrow phone a full hand scrolls horizontally
+   within the strip instead of stacking into multiple rows. */
 .hand--compact {
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
   align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hand--compact > * {
+  flex-shrink: 0;
 }
 
 .hand--compact .hand__tiles {
+  flex-wrap: nowrap;
+  gap: 0.2rem;
   min-height: 0;
 }
 
-/* Treat concealed tiles and exposed melds as whole rows when both are present.
-   The browser keeps everything inline when they fit, then moves the melds
-   below rather than wrapping both groups alongside each other. */
-.hand--compact.hand--has-melds > .hand__tiles:first-child,
+/* Smaller than the usual "small" tile so a full hand's worth of tiles has a
+   chance of fitting a single row on a narrow phone before it needs to scroll. */
+.hand--compact .tile,
+.hand--compact .tile__slot {
+  --tile-width: calc(var(--tile-base) * 0.68);
+}
+
 .hand--compact .hand__melds {
   flex-wrap: nowrap;
+  gap: 0.2rem;
 }
 
 /* The meld highlight has 0.2rem of inset around its tiles. Pull the group left
-   by that inset so a wrapped meld's first tile face aligns with the concealed
+   by that inset so the first meld's tile face sits close after the concealed
    row while the highlight itself extends just beyond it. */
 .hand--has-melds .hand__melds-compact {
   margin-left: -0.2rem;
@@ -94,6 +108,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
   gap: 0.15rem;
 }
 
