@@ -4,8 +4,9 @@ A Hong Kong–style mahjong calculator at `/`, with shared rules settings and a
 pre-game setup screen at `/game`. Tap tiles to build a hand and the calculator
 tells you what it holds, how far it is from winning, and what it scores.
 
-Eventually this will grow into a playable game, so the rules live in a pure
-TypeScript layer that knows nothing about React.
+The headless four-player match model is implemented; bots and the playable table
+are later phases. Rules and game transitions live in pure TypeScript layers that
+know nothing about React.
 
 ## Running the game
 
@@ -29,7 +30,7 @@ src/
     scoring/       faan patterns, rules and the scorer that applies them
     testing/       test-only hand builders (not part of the public engine API)
     index.ts       convenience facade; each responsibility also has its own barrel
-  game/            UI-independent match setup; later phases add mechanics
+  game/            deterministic wall, turns, claims, settlement and projections
   settings/        persisted rule preferences and React state
   pages/           route-level interfaces
   state/           calculator hand state
@@ -94,6 +95,13 @@ Earthly Hand, Nine Gates, Four Kongs, Four Concealed Triplets, All Green, All
 Flowers, and All Seasons. Preferences are saved locally; an active game setup
 retains the rules snapshot with which it started.
 
+The game preset starts every player at 2,000 points and plays one East and one
+South round. A dealer win repeats the hand; a loss or exhaustive draw rotates
+the dealer. Multiple players may win one discard. The discarder pays each
+discard winner; on self-draw all three opponents pay, with a double payment
+between dealer and non-dealer. The capped base schedule is 3 faan = 8 points,
+4 = 16, 5–6 = 64, 7–9 = 128, and 10–13 = 256.
+
 Hong Kong old-style tables vary considerably. Version 1 intentionally excludes
 the no-flowers bonus and seven pairs rather than silently selecting one of their
 conflicting common definitions. Adding either requires a future preset version
@@ -106,7 +114,5 @@ tracking which tile completed the hand, which nothing else here needs.
 
 ## Not modelled yet
 
-Turning faan into money — the faan→points table, and who pays whom on a
-self-draw versus a discard. Dealer rotation and multi-player game mechanics (the
-`/game` route currently captures and displays a rules snapshot only). Game
-persistence, bots, and the playable table arrive in later phases.
+The `/game` route still exposes only setup because the playable table and bots
+belong to Phases 3–4. Game persistence and replay arrive in Phase 5.

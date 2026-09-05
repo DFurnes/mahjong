@@ -15,6 +15,14 @@ export interface RuleSet {
   minimumFaan: number
   limitFaan: number
   houseRules: Record<HouseRuleId, boolean>
+  game: GameRules
+}
+
+export interface GameRules {
+  multipleWins: 'all'
+  dealerContinuation: 'on-win'
+  matchRounds: readonly ['east', 'south']
+  startingScore: number
 }
 
 export interface HouseRuleDefinition {
@@ -67,12 +75,20 @@ export const DEFAULT_RULE_SET: Readonly<RuleSet> = Object.freeze({
   minimumFaan: 3,
   limitFaan: 13,
   houseRules: Object.freeze({ ...DEFAULT_HOUSE_RULES }),
+  game: Object.freeze({
+    multipleWins: 'all', dealerContinuation: 'on-win',
+    matchRounds: Object.freeze(['east', 'south']) as readonly ['east', 'south'], startingScore: 2000,
+  }),
 })
 
 export const LIMIT_FAAN = DEFAULT_RULE_SET.limitFaan
 
 export function copyRuleSet(rules: Readonly<RuleSet>): RuleSet {
-  return { ...rules, houseRules: { ...rules.houseRules } }
+  return {
+    ...rules,
+    houseRules: { ...rules.houseRules },
+    game: { ...rules.game, matchRounds: [...rules.game.matchRounds] as ['east', 'south'] },
+  }
 }
 
 /** Resolve untrusted saved data onto fixed preset fields and current house-rule defaults. */
