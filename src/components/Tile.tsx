@@ -9,6 +9,9 @@ export interface TileProps {
   /** Copies still on the table. Shown as a badge when given. */
   remaining?: number
   disabled?: boolean
+  highlighted?: boolean
+  /** Short tag shown below the tile, e.g. "NEW" on a just-drawn tile. */
+  caption?: string
   size?: TileSize
   onSelect?: (tile: TileModel) => void
 }
@@ -19,9 +22,9 @@ const SIZE_CLASS: Record<TileSize, string> = {
   large: 'tile--large',
 }
 
-export function Tile({ tile, remaining, disabled = false, size = 'medium', onSelect }: TileProps) {
+export function Tile({ tile, remaining, disabled = false, highlighted = false, caption, size = 'medium', onSelect }: TileProps) {
   const label = tileName(tile)
-  const classes = ['tile', SIZE_CLASS[size], onSelect ? '' : 'tile--static'].filter(Boolean).join(' ')
+  const classes = ['tile', SIZE_CLASS[size], onSelect ? '' : 'tile--static', highlighted ? 'tile--highlighted' : ''].filter(Boolean).join(' ')
 
   return (
     <button
@@ -38,6 +41,11 @@ export function Tile({ tile, remaining, disabled = false, size = 'medium', onSel
           {remaining}
         </span>
       )}
+      {caption && (
+        <span className="tile__caption" aria-hidden="true">
+          {caption}
+        </span>
+      )}
     </button>
   )
 }
@@ -45,4 +53,9 @@ export function Tile({ tile, remaining, disabled = false, size = 'medium', onSel
 /** An empty space in the hand, showing how many tiles are still to come. */
 export function TileSlot({ size = 'medium' }: { size?: TileSize }) {
   return <div className={['tile__slot', SIZE_CLASS[size]].filter(Boolean).join(' ')} aria-hidden="true" />
+}
+
+/** The hidden side of a tile, used for opponents' concealed hands. */
+export function TileBack({ size = 'medium' }: { size?: TileSize }) {
+  return <div className={['tile', 'tile--static', 'tile--back', SIZE_CLASS[size]].filter(Boolean).join(' ')} aria-hidden="true" />
 }

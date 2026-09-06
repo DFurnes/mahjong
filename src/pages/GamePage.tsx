@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RuleSet } from '../engine/scoring'
-import { compareTiles, tileName, type Wind } from '../engine/tiles'
+import { compareTiles, tileName, type BonusTile, type StandardTile, type Wind } from '../engine/tiles'
+import { explainHand, type Hand as EngineHand } from '../engine/hand'
 import {
   HeuristicBot, legalActions, projectGame, runControllerStep,
   type GameCommand, type GameProjection, type GameState, type HandResult,
   type PlayerId, type TileInstance,
 } from '../game'
-import { Tile } from '../components/Tile'
+import { Tile, TileBack } from '../components/Tile'
+import { Hand } from '../components/Hand'
+import { Tray } from '../components/Tray'
 import './GamePage.css'
 
 const HUMAN: PlayerId = 0
 const WINDS: Record<Wind, string> = { east: 'East', south: 'South', west: 'West', north: 'North' }
+const WIND_CHARACTERS: Record<Wind, string> = { east: '東', south: '南', west: '西', north: '北' }
 const ACTIONS = { chow: 'Chow', pung: 'Pung', kong: 'Kong', win: 'Win', pass: 'Pass' } as const
 
 function visibleTile(game: GameProjection, uid?: string): TileInstance | undefined {
@@ -44,31 +48,34 @@ function latestAction(game: GameProjection): string {
   }
 }
 
-function StaticTiles({ tiles, small = true }: { tiles: readonly TileInstance[]; small?: boolean }) {
-  return <div className="game-tiles">{tiles.map(({ uid, tile }) => <Tile key={uid} tile={tile} size={small ? 'small' : 'medium'} />)}</div>
+function StaticTiles({ tiles, small = true, highlightedUid }: { tiles: readonly TileInstance[]; small?: boolean; highlightedUid?: string }) {
+  return <div className="game-tiles">{tiles.map(({ uid, tile }) => <Tile key={uid} tile={tile} size={small ? 'small' : 'medium'} highlighted={uid === highlightedUid} />)}</div>
 }
 
 function Seat({ game, player }: { game: GameProjection; player: PlayerId }) {
   const seat = game.players[player]
-  const active = game.phase.type === 'awaiting-discard' && game.phase.player === player
+  const active = game.phase.type !== 'hand-ended' && game.phase.type !== 'match-ended' && game.turn === player
   return (
     <section className={`game-seat game-seat--${player}${active ? ' game-seat--active' : ''}`} aria-label={`${seat.name}, ${WINDS[seat.seatWind]} seat`}>
-      <header className="game-seat__header">
-        <span className="game-seat__name">{seat.name}</span>
-        {game.dealer === player && <span className="game-seat__dealer">Dealer</span>}
-        <span>{WINDS[seat.seatWind]}</span><strong>{seat.score.toLocaleString()}</strong>
-      </header>
-      {player !== HUMAN && <div className="game-seat__concealed" aria-label={`${seat.concealedCount} concealed tiles`}><span className="game-seat__tile-back" aria-hidden="true" /><span>{seat.concealedCount} tiles</span></div>}
-      {(seat.melds.length > 0 || seat.bonus.length > 0) && <div className="game-seat__open">{seat.melds.map((meld, index) => <StaticTiles key={index} tiles={meld.tiles} />)}<StaticTiles tiles={seat.bonus} /></div>}
+      <div className="game-seat__content">
+        <header className="game-seat__header">
+          <span className="game-seat__name">{seat.name}</span>
+          {game.dealer === player && <span className="game-seat__dealer">Dealer</span>}
+          <span>{WINDS[seat.seatWind]} <span lang="zh-Hant" aria-hidden="true">{WIND_CHARACTERS[seat.seatWind]}</span></span><strong>{seat.score.toLocaleString()}</strong>
+        </header>
+        {player !== HUMAN && <div className="game-seat__concealed" aria-label={`${seat.concealedCount} concealed tiles`}>{Array.from({ length: seat.concealedCount }, (_, index) => <TileBack key={index} size="small" />)}</div>}
+        {(seat.melds.length > 0 || seat.bonus.length > 0) && <div className="game-seat__open">{seat.melds.map((meld, index) => <StaticTiles key={index} tiles={meld.tiles} />)}<StaticTiles tiles={seat.bonus} /></div>}
+      </div>
     </section>
   )
 }
 
 function DiscardPool({ game }: { game: GameProjection }) {
   const discarded = Object.values(game.players).flatMap((player) => player.discards)
+  const latestDiscardUid = game.events.findLast((event) => event.type === 'discard')?.tileUid
   return <section className="game-discards" aria-label="Shared discard pile">
     <span className="game-discards__label">Discards · {discarded.length}</span>
-    {discarded.length > 0 ? <StaticTiles tiles={discarded} /> : <span className="game-discards__empty">No discards yet</span>}
+    {discarded.length > 0 ? <StaticTiles tiles={discarded} highlightedUid={latestDiscardUid} /> : <span className="game-discards__empty">No discards yet</span>}
   </section>
 }
 
@@ -142,6 +149,7 @@ export function GamePage({ rules, game: state, onStart, onCommand, onReplaceGame
   const [thinking, setThinking] = useState(false)
   const [error, setError] = useState('')
   const [choice, setChoice] = useState<'chow' | 'kong' | null>(null)
+  const [handCollapsed, setHandCollapsed] = useState(false)
   const botSeed = state?.seed
   const bots = useMemo(() => botSeed === undefined ? {} : ({
     1: new HeuristicBot({ tieBreakSeed: botSeed * 4 + 1 }), 2: new HeuristicBot({ tieBreakSeed: botSeed * 4 + 2 }), 3: new HeuristicBot({ tieBreakSeed: botSeed * 4 + 3 }),
@@ -185,32 +193,86 @@ export function GamePage({ rules, game: state, onStart, onCommand, onReplaceGame
   const human = game.players[HUMAN]
   const latestDraw = game.events.findLast((event) => (event.type === 'draw' || event.type === 'replacement-draw') && event.player === HUMAN)?.tileUid
   const drawnUid = game.phase.type === 'awaiting-discard' && game.phase.player === HUMAN ? latestDraw ?? (game.events.length === 1 ? human.concealed?.at(-1)?.uid : undefined) : undefined
-  const held = [...(human.concealed ?? [])].sort((a, b) => compareTiles(a.tile, b.tile))
-  const drawn = held.find(({ uid }) => uid === drawnUid); const mainHand = held.filter(({ uid }) => uid !== drawnUid)
+  // While deciding what to discard, the just-drawn tile sits apart on the
+  // right rather than falling into sorted order — once discarded, the rest
+  // of the hand it leaves behind is fully sorted again.
+  const sortedRest = [...(human.concealed ?? [])].filter(({ uid }) => uid !== drawnUid).sort((a, b) => compareTiles(a.tile, b.tile))
+  const drawnTile = drawnUid ? human.concealed?.find(({ uid }) => uid === drawnUid) : undefined
+  const held = drawnTile ? [...sortedRest, drawnTile] : sortedRest
+  const heldTiles = held.map(({ tile }) => tile as StandardTile)
+  const heldMelds = human.melds.map(({ meld }) => meld)
+  const heldBonus = human.bonus.map(({ tile }) => tile as BonusTile)
+  const explanation = explainHand({ concealed: heldTiles, melds: heldMelds, bonus: heldBonus } satisfies EngineHand)
   const result = game.phase.type === 'hand-ended' ? game.phase.result : null
+  const humanActive = game.phase.type !== 'hand-ended' && game.turn === HUMAN
   const grouped = (type: keyof typeof ACTIONS) => groups.get(type) ?? []
   const chooseAction = (type: keyof typeof ACTIONS) => {
     const commands = grouped(type)
     if ((type === 'chow' || type === 'kong') && commands.length > 1) setChoice(type)
     else if (commands[0]) onCommand(commands[0])
   }
+  const discardable = (index: number) => thinking || !discardUids.has(held[index].uid)
+  const drawn = (index: number) => held[index].uid === drawnUid
+  const discardTile = (index: number) => onCommand({ type: 'discard', player: HUMAN, tileUid: held[index].uid })
+  const showDiscardHint = !thinking && actions.some((action) => action.type === 'discard')
+  // Shown alongside the hand in both the compact peek and the expanded body,
+  // so the prompt to discard survives collapsing the tray.
+  const handControls = (
+    <div className="game-controls" role="group" aria-label="Hand controls">
+      {showDiscardHint && (
+        <span className="game-controls__hint">Choose a tile to discard.</span>
+      )}
+    </div>
+  )
 
   return <main className="game-page game-page--table">
-    <section className="game-status" aria-label="Match status" data-testid="snapshot-rules"><span><b>{WINDS[game.roundWind]} round</b> · Hand {game.handNumber}</span><span>Wall: <b>{game.liveWallCount}</b> · Replacements: <b>{game.replacementWallCount}</b></span><span>Turn: <b>{game.players[game.turn].name}</b></span><span>Rules: <b>{Object.values(game.rules.houseRules).filter(Boolean).length} house rules</b></span></section>
-    <div className="game-board"><Seat game={game} player={2} /><Seat game={game} player={3} />
-      <div className="game-board__center"><DiscardPool game={game} /></div><Seat game={game} player={1} />
-      <div className="game-board__action"><span aria-live="polite">{thinking ? 'Computer players are thinking…' : latestAction(game)}</span><div className="game-board__claims" role="group" aria-label="Available calls">{(['chow', 'pung', 'kong', 'win'] as const).filter((type) => grouped(type).length).map((type) => <button key={type} type="button" className={`game-action${type === 'win' ? ' game-action--primary' : ''}`} disabled={thinking} onClick={() => chooseAction(type)}>{ACTIONS[type]}</button>)}</div></div>
-      <section className="game-human" aria-labelledby="your-hand-title"><div className="game-human__heading"><h2 id="your-hand-title">Your hand</h2><span>{WINDS[human.seatWind]} · {human.score.toLocaleString()}</span></div>
-        {(human.melds.length > 0 || human.bonus.length > 0) && <div className="game-human__open">{human.melds.map((meld, index) => <StaticTiles key={index} tiles={meld.tiles} />)}<StaticTiles tiles={human.bonus} /></div>}
-        <div className="game-human__hand" role="group" aria-label="Your concealed hand"><div className="game-tiles">{mainHand.map(({ uid, tile }) => <Tile key={uid} tile={tile} size="large" disabled={thinking || !discardUids.has(uid)} onSelect={discardUids.has(uid) ? () => onCommand({ type: 'discard', player: HUMAN, tileUid: uid }) : undefined} />)}</div>
-          {drawn && <div className="game-human__drawn"><span>Drawn</span><Tile tile={drawn.tile} size="large" disabled={thinking || !discardUids.has(drawn.uid)} onSelect={discardUids.has(drawn.uid) ? () => onCommand({ type: 'discard', player: HUMAN, tileUid: drawn.uid }) : undefined} /></div>}
-        </div>
-        <div className="game-controls" role="group" aria-label="Hand controls">{grouped('pass').length > 0 && <button type="button" className="game-action" disabled={thinking} onClick={() => chooseAction('pass')}>{ACTIONS.pass}</button>}
-          {!thinking && actions.some((action) => action.type === 'discard') && <span className="game-controls__hint">Choose a tile to discard</span>}
-        </div>
-      </section>
+    <div className="game-page__content">
+      <section className="game-status" aria-label="Match status" data-testid="snapshot-rules"><span><b>{WINDS[game.roundWind]} round</b> · Hand {game.handNumber}</span><span>Wall: <b>{game.liveWallCount}</b> · Replacements: <b>{game.replacementWallCount}</b></span><span>Turn: <b>{game.players[game.turn].name}</b></span><span>Rules: <b>{Object.values(game.rules.houseRules).filter(Boolean).length} house rules</b></span></section>
+      <div className="game-board"><Seat game={game} player={2} /><Seat game={game} player={3} />
+        <div className="game-board__center"><DiscardPool game={game} /></div><Seat game={game} player={1} />
+        <div className="game-board__action"><span aria-live="polite">{thinking ? 'Computer players are thinking…' : latestAction(game)}</span><div className="game-board__claims" role="group" aria-label="Available calls">{(['chow', 'pung', 'kong', 'win'] as const).filter((type) => grouped(type).length).map((type) => <button key={type} type="button" className="game-action game-action--reaction" disabled={thinking} onClick={() => chooseAction(type)}>{ACTIONS[type]}</button>)}{grouped('pass').length > 0 && <button type="button" className="game-action" disabled={thinking} onClick={() => chooseAction('pass')}>{ACTIONS.pass}</button>}</div></div>
+      </div>
+      <p className="game-error" role="alert">{error}</p><History game={game} />
     </div>
-    <p className="game-error" role="alert">{error}</p><History game={game} />
+
+    <footer className="game-tray">
+      <section className={`game-human${humanActive ? ' game-human--active' : ''}`} aria-label="Your hand">
+        <Tray
+          title="Your hand"
+          meta={<>{WINDS[human.seatWind]} <span lang="zh-Hant" aria-hidden="true">{WIND_CHARACTERS[human.seatWind]}</span> · {human.score.toLocaleString()}</>}
+          status={explanation.brief}
+          collapsed={handCollapsed}
+          onToggle={() => setHandCollapsed((collapsed) => !collapsed)}
+          peek={
+            <>
+              <Hand
+                compact
+                tiles={heldTiles}
+                melds={heldMelds}
+                bonus={heldBonus}
+                disabledTile={discardable}
+                highlightedTile={drawn}
+                onSelectTile={discardTile}
+              />
+              {handControls}
+            </>
+          }
+        >
+          <Hand
+            tiles={heldTiles}
+            melds={heldMelds}
+            bonus={heldBonus}
+            tilesLabel="Your concealed hand"
+            tileSize="large"
+            disabledTile={discardable}
+            highlightedTile={drawn}
+            onSelectTile={discardTile}
+          />
+          {handControls}
+        </Tray>
+      </section>
+    </footer>
+
     {result && <div className="game-modal"><section className="game-result" role="dialog" aria-modal="true" aria-labelledby="hand-result-title"><p className="game-card__eyebrow">Hand complete</p><h2 id="hand-result-title">{result.type === 'win' ? 'Winning hand' : 'Exhaustive draw'}</h2><ResultBreakdown result={result} game={game} /><button type="button" autoFocus className="game-action game-action--primary" onClick={() => onCommand({ type: 'next-hand' })}>Next hand</button></section></div>}
     {choice && <ChoiceDialog type={choice} commands={grouped(choice)} game={game} onChoose={(command) => { setChoice(null); onCommand(command) }} onClose={() => setChoice(null)} />}
   </main>

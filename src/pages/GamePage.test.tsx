@@ -14,14 +14,24 @@ function renderGame(game: GameState, onCommand = vi.fn<(command: GameCommand) =>
 }
 
 describe('Phase 4 game page', () => {
-  it('renders four seats, public counts, status, and a separated dealer draw', () => {
+  it('renders four seats, public counts, status, and a highlighted just-drawn tile', () => {
     renderGame(createGame(DEFAULT_RULE_SET, { seed: 13 }))
     expect(screen.getByRole('region', { name: 'Computer 2, West seat' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Computer 3, North seat' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Computer 1, South seat' })).toBeInTheDocument()
+    expect(screen.getByText('東')).toBeInTheDocument()
+    expect(screen.getByText('南')).toBeInTheDocument()
+    expect(screen.getByText('西')).toBeInTheDocument()
+    expect(screen.getByText('北')).toBeInTheDocument()
     expect(screen.getAllByLabelText('13 concealed tiles')).toHaveLength(3)
-    expect(screen.getByText('Drawn')).toBeInTheDocument()
-    expect(screen.getByText('Choose a tile to discard')).toBeInTheDocument()
+    for (const hand of screen.getAllByLabelText('13 concealed tiles')) {
+      expect(hand.querySelectorAll('.tile--back')).toHaveLength(13)
+    }
+    const yourHand = screen.getByRole('group', { name: 'Your concealed hand' })
+    expect(within(yourHand).getAllByRole('button')).toHaveLength(14)
+    expect(yourHand.querySelectorAll('.tile--highlighted')).toHaveLength(1)
+    expect(screen.getByText('Choose a tile to discard.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Your hand' })).toHaveClass('game-human--active')
     expect(screen.getByRole('region', { name: 'Match status' })).toHaveTextContent('East round')
   })
 
@@ -43,6 +53,15 @@ describe('Phase 4 game page', () => {
     expect(within(pool).queryByText('Computer 1')).not.toBeInTheDocument()
   })
 
+  it('highlights the most recently discarded tile', () => {
+    const game = createGame(DEFAULT_RULE_SET, { seed: 13 })
+    const discarded = game.players[0].concealed.pop()!
+    game.players[0].discards.push(discarded)
+    game.events.push({ index: game.events.length, type: 'discard', player: 0, tileUid: discarded.uid })
+    renderGame(game)
+    expect(within(screen.getByRole('region', { name: 'Shared discard pile' })).getByRole('button')).toHaveClass('tile--highlighted')
+  })
+
   it('offers a keyboard-accessible choice when several chows are legal', async () => {
     const game = createGame(DEFAULT_RULE_SET, { seed: 2 })
     const held = ['b1', 'b2', 'b4', 'b5', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'd1', 'd2', 'd3']
@@ -53,10 +72,14 @@ describe('Phase 4 game page', () => {
       discard: { uid: 'choice-discard', tile: parseTileId('b3') },
       eligible: [0], responses: {},
     }
+    game.turn = 3
     const onCommand = renderGame(game)
     const user = userEvent.setup()
     const calls = screen.getByRole('group', { name: 'Available calls' })
+    expect(screen.getByRole('region', { name: 'Computer 3, North seat' })).toHaveClass('game-seat--active')
     expect(within(screen.getByRole('group', { name: 'Hand controls' })).queryByRole('button', { name: 'Chow' })).not.toBeInTheDocument()
+    expect(within(calls).getByRole('button', { name: 'Chow' })).toHaveClass('game-action--reaction')
+    expect(within(calls).getAllByRole('button').at(-1)).toHaveTextContent('Pass')
     await user.click(within(calls).getByRole('button', { name: 'Chow' }))
     const dialog = screen.getByRole('dialog', { name: 'Choose a Chow' })
     expect(within(dialog).getAllByRole('button', { name: /Chow option/ })).toHaveLength(3)

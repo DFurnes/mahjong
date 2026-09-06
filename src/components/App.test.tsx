@@ -296,17 +296,17 @@ describe('collapsing the tray', () => {
     expect(screen.getByRole('heading', { name: 'Score' })).toBeVisible()
   })
 
-  it('shows a running status on the bar', async () => {
+  it('shows a running status at the foot of the panel', async () => {
     const user = userEvent.setup()
     render(<App />)
 
-    expect(toggle()).toHaveTextContent('No tiles yet')
+    expect(screen.getByText('No tiles yet')).toBeInTheDocument()
 
     for (const name of ['1 of Bamboo', '2 of Bamboo', '3 of Bamboo']) {
       await user.click(boardTile(name))
     }
 
-    expect(toggle()).toHaveTextContent('1 set · 11 away')
+    expect(screen.getByText('1 set · 11 away')).toBeInTheDocument()
   })
 
   it('still returns a tile to the board from the collapsed strip', async () => {

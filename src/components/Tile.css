@@ -1,5 +1,6 @@
 .tile {
   --tile-width: var(--tile-base);
+  --tile-under-edge: #8f2020;
 
   position: relative;
   display: flex;
@@ -17,7 +18,9 @@
   border: 1px solid var(--tile-edge);
   border-bottom-width: 3px;
   border-radius: 0.35rem;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow:
+    0 3px 0 var(--tile-under-edge),
+    0 4px 2px rgb(0 0 0 / 0.25);
 
   cursor: pointer;
   transition:
@@ -25,14 +28,18 @@
     box-shadow 80ms ease;
 }
 
-.tile:hover:not(:disabled) {
+.tile:hover:not(:disabled):not(.tile--static) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgb(0 0 0 / 0.3);
+  box-shadow:
+    0 3px 0 var(--tile-under-edge),
+    0 6px 8px rgb(0 0 0 / 0.3);
 }
 
-.tile:active:not(:disabled) {
+.tile:active:not(:disabled):not(.tile--static) {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  box-shadow:
+    0 3px 0 var(--tile-under-edge),
+    0 4px 2px rgb(0 0 0 / 0.25);
 }
 
 .tile:focus-visible {
@@ -42,16 +49,22 @@
 
 .tile:disabled {
   cursor: default;
-  opacity: 0.32;
 }
 
 .tile--static {
   cursor: default;
 }
 
-/* A tile shown for reference is not interactive, but it is not unavailable either. */
-.tile.tile--static:disabled {
-  opacity: 1;
+.tile--highlighted {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.tile--back {
+  --tile-under-edge: var(--tile-edge);
+
+  background: linear-gradient(170deg, #c83b3b 0%, #8f2020 100%);
+  border-color: #681919;
 }
 
 .tile__art {
@@ -77,6 +90,29 @@
 
   background: var(--badge-bg);
   border-radius: 999px;
+}
+
+.tile__caption {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  /* Flush against the highlight outline's outer edge (offset + width), so the
+     tab reads as attached to it rather than floating below. */
+  margin-top: 4px;
+  transform: translateX(-50%);
+
+  padding: 0.05rem 0.35rem;
+
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--button-ink);
+  white-space: nowrap;
+
+  background: var(--focus);
+  border-radius: 0 0 6px 6px;
+  pointer-events: none;
 }
 
 .tile__slot {

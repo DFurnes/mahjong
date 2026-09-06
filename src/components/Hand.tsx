@@ -12,8 +12,7 @@ import {
   meldName,
   meldTiles,
 } from '../engine/hand'
-import type { Area } from '../state/useMahjongTable'
-import { Tile, TileSlot } from './Tile'
+import { Tile, TileSlot, type TileSize } from './Tile'
 import { tileArt } from './tileArt'
 import './Hand.css'
 
@@ -21,10 +20,20 @@ export interface HandProps {
   tiles: readonly StandardTile[]
   melds: readonly Set3[]
   bonus: readonly BonusTile[]
-  /** Tapping a tile in hand puts it back on the table. */
-  onReturn: (area: Area, index: number) => void
-  /** Tapping a declared meld takes it apart and returns its tiles to hand. */
-  onUndeclare: (index: number) => void
+  /** Accessible name for the main hand's tile group. */
+  tilesLabel?: string
+  /** Tile size for the main hand's row, ignored in compact mode. */
+  tileSize?: TileSize
+  /** Tapping a tile in hand, e.g. to return it to the table or discard it. Omit to make tiles inert. */
+  onSelectTile?: (index: number) => void
+  /** Tapping a bonus tile. Omit to make bonus tiles inert. */
+  onSelectBonus?: (index: number) => void
+  /** Tapping a declared meld takes it apart and returns its tiles to hand. Omit to show melds as locked in. */
+  onUndeclare?: (index: number) => void
+  /** Per-tile disabled state for the main hand, e.g. tiles that aren't legal to play right now. */
+  disabledTile?: (index: number) => boolean
+  /** Per-tile highlight for the main hand, e.g. a tile just drawn. */
+  highlightedTile?: (index: number) => boolean
   /**
    * Strip the hand down to small tiles and slots with no headings for the
    * collapsed tray.
@@ -56,7 +65,7 @@ function MeldList({
   size,
 }: {
   melds: readonly Set3[]
-  onUndeclare: (index: number) => void
+  onUndeclare?: (index: number) => void
   size: 'small' | 'medium'
 }) {
   if (melds.length === 0) return null
@@ -65,23 +74,40 @@ function MeldList({
     <ul className="hand__melds">
       {melds.map((meld, index) => (
         <li className="hand__meld" key={`${meldKey(meld)}-${index}`}>
-          <button
-            type="button"
-            className="hand__meld-tiles"
-            onClick={() => onUndeclare(index)}
-            aria-label={`${meldName(meld)}, tap to take back`}
-          >
-            {meldTiles(meld).map((tile, tileIndex) => (
-              <MeldTileArt key={tileIndex} tile={tile} size={size} />
-            ))}
-          </button>
+          {onUndeclare ? (
+            <button
+              type="button"
+              className="hand__meld-tiles"
+              onClick={() => onUndeclare(index)}
+              aria-label={`${meldName(meld)}, tap to take back`}
+            >
+              {meldTiles(meld).map((tile, tileIndex) => (
+                <MeldTileArt key={tileIndex} tile={tile} size={size} />
+              ))}
+            </button>
+          ) : (
+            <span className="hand__meld-tiles hand__meld-tiles--static" aria-label={meldName(meld)}>
+              {meldTiles(meld).map((tile, tileIndex) => (
+                <MeldTileArt key={tileIndex} tile={tile} size={size} />
+              ))}
+            </span>
+          )}
         </li>
       ))}
     </ul>
   )
 }
 
-function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare }: Omit<HandProps, 'compact'>) {
+function CompactHand({
+  tiles,
+  melds,
+  bonus,
+  onSelectTile,
+  onSelectBonus,
+  onUndeclare,
+  disabledTile,
+  highlightedTile,
+}: Omit<HandProps, 'compact' | 'tilesLabel'>) {
   const concealedSlots = Math.max(0, HAND_SIZE - melds.length * 3)
   const emptySlots = Math.max(0, concealedSlots - tiles.length)
 
@@ -131,7 +157,10 @@ function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare }: Omit<HandPr
               key={tileKey(tile, index)}
               tile={tile}
               size="small"
-              onSelect={() => onReturn('concealed', index)}
+              disabled={disabledTile?.(index)}
+              highlighted={highlightedTile?.(index)}
+              caption={highlightedTile?.(index) ? 'NEW' : undefined}
+              onSelect={onSelectTile ? () => onSelectTile(index) : undefined}
             />
           ))}
           {Array.from({ length: emptySlots }, (_, index) => (
@@ -149,7 +178,7 @@ function CompactHand({ tiles, melds, bonus, onReturn, onUndeclare }: Omit<HandPr
               key={tileKey(tile, index)}
               tile={tile}
               size="small"
-              onSelect={() => onReturn('bonus', index)}
+              onSelect={onSelectBonus ? () => onSelectBonus(index) : undefined}
             />
           ))}
         </div>
@@ -162,8 +191,13 @@ export function Hand({
   tiles,
   melds,
   bonus,
-  onReturn,
+  tilesLabel = 'Your hand',
+  tileSize = 'medium',
+  onSelectTile,
+  onSelectBonus,
   onUndeclare,
+  disabledTile,
+  highlightedTile,
   compact = false,
 }: HandProps) {
   if (compact) {
@@ -172,8 +206,11 @@ export function Hand({
         tiles={tiles}
         melds={melds}
         bonus={bonus}
-        onReturn={onReturn}
+        onSelectTile={onSelectTile}
+        onSelectBonus={onSelectBonus}
         onUndeclare={onUndeclare}
+        disabledTile={disabledTile}
+        highlightedTile={highlightedTile}
       />
     )
   }
@@ -191,18 +228,22 @@ export function Hand({
           <div
             className="hand__tiles hand__tiles--main"
             role="group"
-            aria-label="Your hand"
+            aria-label={tilesLabel}
             data-testid="hand-tiles"
           >
             {tiles.map((tile, index) => (
               <Tile
                 key={tileKey(tile, index)}
                 tile={tile}
-                onSelect={() => onReturn('concealed', index)}
+                size={tileSize}
+                disabled={disabledTile?.(index)}
+                highlighted={highlightedTile?.(index)}
+                caption={highlightedTile?.(index) ? 'NEW' : undefined}
+                onSelect={onSelectTile ? () => onSelectTile(index) : undefined}
               />
             ))}
             {Array.from({ length: emptySlots }, (_, index) => (
-              <TileSlot key={`slot-${index}`} />
+              <TileSlot key={`slot-${index}`} size={tileSize} />
             ))}
           </div>
         </div>
@@ -230,7 +271,7 @@ export function Hand({
                 key={tileKey(tile, index)}
                 tile={tile}
                 size="small"
-                onSelect={() => onReturn('bonus', index)}
+                onSelect={onSelectBonus ? () => onSelectBonus(index) : undefined}
               />
             ))
           )}

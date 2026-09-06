@@ -89,7 +89,8 @@ function CalculatorPage({ rules }: { rules: ScoringOptions['rules'] }) {
               tiles={concealed}
               melds={melds}
               bonus={bonus}
-              onReturn={table.returnTile}
+              onSelectTile={(index) => table.returnTile('concealed', index)}
+              onSelectBonus={(index) => table.returnTile('bonus', index)}
               onUndeclare={table.undeclareMeld}
             />
           }
@@ -98,7 +99,8 @@ function CalculatorPage({ rules }: { rules: ScoringOptions['rules'] }) {
             tiles={concealed}
             melds={melds}
             bonus={bonus}
-            onReturn={table.returnTile}
+            onSelectTile={(index) => table.returnTile('concealed', index)}
+            onSelectBonus={(index) => table.returnTile('bonus', index)}
             onUndeclare={table.undeclareMeld}
           />
         </Tray>
